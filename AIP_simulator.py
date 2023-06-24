@@ -251,7 +251,7 @@ angles3 = [32,29,26,23,20,18,16,14,12,10,8,6,4,3,2,1,0,-1,-2,-3,-4,-6,-8,-10,-12
 angles_positive = [0,1,2,3,4,6,8,10,12,14,16,18,20,23,26,29,32]
 angles_negative = [-32,-29,-26,-23,-20,-18,-16,-14,-12,-10,-8,-6,-4,-3,-2,-1,0]
 
-def calculate__angles(modes, angles, size):
+def calculate_iidx_ifact(modes, angles, size):
     values_ifact = []
     values_idx = []
     columns = []
@@ -267,9 +267,8 @@ def calculate__angles(modes, angles, size):
     df = pd.DataFrame(list(zip(*values_ifact)),columns = columns)
     df.to_excel(excel_writer = path + "values_ifact_" + str(size) + ".xlsx")
 
-    
 
-def write_samples_angles(modes, angles, size, normalize):
+def write_samples(modes, angles, size, normalize):
     values_ref = []
     values_id = []
     columns = []
@@ -307,13 +306,7 @@ def calculate_equations(modes, angles,size):
         tb = TransformBlock(size, size, i, j, 0, size*2 + 2, size*2 + 2, 0)
         tb.calculate_equations_mode()
 
-def calculate_all_equations_reuse(modes, angles,size):
-    blocks = []
-    for i,j in zip(modes,angles):
-        blocks.append(TransformBlock(size, size, i, j, 0, size*2 + 2, size*2 + 2, 0))
 
-    for tb in blocks:
-        tb.calculate_equations_mode()
 
 
 
