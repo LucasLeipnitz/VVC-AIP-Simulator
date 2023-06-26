@@ -12,28 +12,28 @@ class TransformBlock:
         int nTbH
         int predModeIntra
         int intraPredAngle
-        int refIdx
+        int refidx
         int refW
         int refH
-        int cIdx
+        int cidx
         int refFilterFlag
         int{ref_index} ref
         int[] ref_id
-        int[] array_iFact
-        int[] array_iIdx
+        int[] array_ifact
+        int[] array_iidx
     '''
 
     
-    def __init__(self, nTbW, nTbH, predModeIntra, intraPredAngle, refIdx, refW, refH, cIdx):
+    def __init__(self, nTbW, nTbH, predModeIntra, intraPredAngle, refidx, refW, refH, cidx):
         #Initialize inputs
         self.nTbW = nTbW
         self.nTbH = nTbH
         self.predModeIntra = predModeIntra
         self.intraPredAngle = intraPredAngle
-        self.refIdx = refIdx
+        self.refidx = refidx
         self.refW = refW
         self.refH = refH
-        self.cIdx = cIdx
+        self.cidx = cidx
         
 
         #refFilterFlag hardcoded for now
@@ -43,91 +43,91 @@ class TransformBlock:
         self.ref = defaultdict(lambda: "Null")
         self.ref_id = []
 
-        #Initialize iFact and iIdx array as empty lists
-        self.array_iFact = []
-        self.array_iIdx = []
+        #Initialize ifact and iidx array as empty lists
+        self.array_ifact = []
+        self.array_iidx = []
 
         self.equations = []
         self.equations_reuse = []
 
     def calculate_reference_sample_array_greather_equal_34(self):
         index_x = 0
-        index_y = - 1 - self.refIdx
+        index_y = - 1 - self.refidx
 
-        #with x = 0...nTbW + refIdx + 1. The +1 on the end is to include (nTbW + refIdx + 1) in the array
-        for x in range((self.nTbW + self.refIdx + 1) + 1):
-            #ref[x] = p[-1 -refIdx + x][-1 -refIdx] 
-            index_x = -1 - self.refIdx + x
+        #with x = 0...nTbW + refidx + 1. The +1 on the end is to include (nTbW + refidx + 1) in the array
+        for x in range((self.nTbW + self.refidx + 1) + 1):
+            #ref[x] = p[-1 -refidx + x][-1 -refidx] 
+            index_x = -1 - self.refidx + x
             self.ref[x] = "p[" + str(index_x) + "][" + str(index_y) + "]"
             self.ref_id.append(x)
 
         if (self.intraPredAngle < 0):
             invAngle = round((512*32)/self.intraPredAngle)                
-            index_x = - 1 - self.refIdx
+            index_x = - 1 - self.refidx
             index_y = 0
 
             #with x = -nTbH ... -1
             for x in range(-self.nTbH, 0):
-                #ref[x] = p[-1 -refIdx][-1 -refIdx + Min((x*invAngle + 256) >> 9, nTbH)]
-                index_y = -1 - self.refIdx + min((x*invAngle + 256) >> 9, self.nTbH)
+                #ref[x] = p[-1 -refidx][-1 -refidx + Min((x*invAngle + 256) >> 9, nTbH)]
+                index_y = -1 - self.refidx + min((x*invAngle + 256) >> 9, self.nTbH)
                 self.ref[x] = "p[" + str(index_x) + "][" + str(index_y) + "]"
                 self.ref_id.append(x)
                     
         else:
-            index_y = - 1 - self.refIdx
-            #with x = nTbW + 2 + refIdx ... refW + refIdx
-            for x in range(self.nTbW + 2 + self.refIdx, (self.refW + self.refIdx) + 1):
-                #ref[x] = p[-1 -refIdx + x][-1 -refIdx]
-                index_x = -1 - self.refIdx + x
+            index_y = - 1 - self.refidx
+            #with x = nTbW + 2 + refidx ... refW + refidx
+            for x in range(self.nTbW + 2 + self.refidx, (self.refW + self.refidx) + 1):
+                #ref[x] = p[-1 -refidx + x][-1 -refidx]
+                index_x = -1 - self.refidx + x
                 self.ref[x] = ("p[" + str(index_x) + "][" + str(index_y) + "]")
                 self.ref_id.append(x)
             
             index_x = -1 + self.refW
-            #with x = 1...(Max(1,nTbW/nTbH)*refIdx + 1)
-            for x in range(1,(max(1,self.nTbW/self.nTbH)*self.refIdx + 1) + 1):
-                #ref[refW + refIdx + x] = p[-1 -refW][-1 -refIdx]
-                self.ref[self.refW + self.refIdx + x] = "p[" + str(index_x) + "][" + str(index_y) + "]"
+            #with x = 1...(Max(1,nTbW/nTbH)*refidx + 1)
+            for x in range(1,(max(1,self.nTbW/self.nTbH)*self.refidx + 1) + 1):
+                #ref[refW + refidx + x] = p[-1 -refW][-1 -refidx]
+                self.ref[self.refW + self.refidx + x] = "p[" + str(index_x) + "][" + str(index_y) + "]"
                 self.ref_id.append(x)
 
         self.ref_id.sort()
 
     def calculate_reference_sample_array_less_34(self):
-        index_x = - 1 - self.refIdx
+        index_x = - 1 - self.refidx
         index_y = 0
 
-        #with x = 0...nTbH + refIdx + 1. The +1 on the end is to include (nTbH + refIdx + 1) in the array
-        for x in range((self.nTbH + self.refIdx + 1) + 1):
-            #ref[x] = p[-1 -refIdx][-1 -refIdx + x] 
-            index_y = -1 - self.refIdx + x
+        #with x = 0...nTbH + refidx + 1. The +1 on the end is to include (nTbH + refidx + 1) in the array
+        for x in range((self.nTbH + self.refidx + 1) + 1):
+            #ref[x] = p[-1 -refidx][-1 -refidx + x] 
+            index_y = -1 - self.refidx + x
             self.ref[x] = "p[" + str(index_x) + "][" + str(index_y) + "]"
             self.ref_id.append(x)
 
         if (self.intraPredAngle < 0):
             invAngle = round((512*32)/self.intraPredAngle)                
             index_x = 0
-            index_y = - 1 - self.refIdx
+            index_y = - 1 - self.refidx
 
             #with x = -nTbW ... -1
             for x in range(-self.nTbW, 0):
-                #ref[x] = p[-1 -refIdx + Min((x*invAngle + 256) >> 9, nTbW][-1 -refIdx]
-                index_x = -1 - self.refIdx + min((x*invAngle + 256) >> 9, self.nTbH)
+                #ref[x] = p[-1 -refidx + Min((x*invAngle + 256) >> 9, nTbW][-1 -refidx]
+                index_x = -1 - self.refidx + min((x*invAngle + 256) >> 9, self.nTbH)
                 self.ref[x] = "p[" + str(index_x) + "][" + str(index_y) + "]"
                 self.ref_id.append(x)
                     
         else:
-            index_x = - 1 - self.refIdx
-            #with x = nTbH + 2 + refIdx ... refH + refIdx
-            for x in range(self.nTbH + 2 + self.refIdx, (self.refH + self.refIdx) + 1):
-                #ref[x] = p[-1 -refIdx][-1 -refIdx + x]
-                index_y = -1 - self.refIdx + x
+            index_x = - 1 - self.refidx
+            #with x = nTbH + 2 + refidx ... refH + refidx
+            for x in range(self.nTbH + 2 + self.refidx, (self.refH + self.refidx) + 1):
+                #ref[x] = p[-1 -refidx][-1 -refidx + x]
+                index_y = -1 - self.refidx + x
                 self.ref[x] = ("p[" + str(index_x) + "][" + str(index_y) + "]")
                 self.ref_id.append(x)
             
             index_y = -1 + self.refH
-            #with x = 1...(Max(1,nTbH/nTbW)*refIdx + 1)
-            for x in range(1,(max(1,self.nTbH/self.nTbW)*self.refIdx + 1) + 1):
-                #ref[refH + refIdx + x] = p[-1 -refIdx][-1 -refH]
-                self.ref[self.refH + self.refIdx + x] = "p[" + str(index_x) + "][" + str(index_y) + "]"
+            #with x = 1...(Max(1,nTbH/nTbW)*refidx + 1)
+            for x in range(1,(max(1,self.nTbH/self.nTbW)*self.refidx + 1) + 1):
+                #ref[refH + refidx + x] = p[-1 -refidx][-1 -refH]
+                self.ref[self.refH + self.refidx + x] = "p[" + str(index_x) + "][" + str(index_y) + "]"
                 self.ref_id.append(x)
 
         self.ref_id.sort()
@@ -143,11 +143,11 @@ class TransformBlock:
 
     def calculate_constants_mode(self):
         for x in range(self.nTbW):
-            iIdx = ((x + 1)*self.intraPredAngle) >> 5
-            iFact = ((x + 1)*self.intraPredAngle) & 31
-            #print("When x = " + str(x) + ", f = ((" + str(x) + " + 1)* " + str(angle) + ") & 31"," = ",iFact)
-            self.array_iIdx.append(iIdx)
-            self.array_iFact.append(iFact)
+            iidx = ((x + 1)*self.intraPredAngle) >> 5
+            ifact = ((x + 1)*self.intraPredAngle) & 31
+            #print("When x = " + str(x) + ", f = ((" + str(x) + " + 1)* " + str(angle) + ") & 31"," = ",ifact)
+            self.array_iidx.append(iidx)
+            self.array_ifact.append(ifact)
 
     def calculate_equations_mode(self):
         equations = []
@@ -155,12 +155,12 @@ class TransformBlock:
         for x in range(self.nTbW): 
             columns.append(x)
             current_column = []
-            iIdx = ((x + 1)*self.intraPredAngle) >> 5
-            iFact = ((x + 1)*self.intraPredAngle) & 31
+            iidx = ((x + 1)*self.intraPredAngle) >> 5
+            ifact = ((x + 1)*self.intraPredAngle) & 31
             for y in range(self.nTbH):
-                current_column.append("fC[" + str(iFact) + "][0]*ref[" + str(y + iIdx + 0) + "] + " + "fC[" + str(iFact) +
-                                        "][1]*ref[" + str(y + iIdx + 1) + "] + " + "fC[" + str(iFact) + "][2]*ref[" +
-                                        str(y + iIdx + 2) + "] + " + "fC[" + str(iFact) + "][3]*ref[" + str(y + iIdx + 3) + "]")        
+                current_column.append("fC[" + str(ifact) + "][0]*ref[" + str(y + iidx + 0) + "] + " + "fC[" + str(ifact) +
+                                        "][1]*ref[" + str(y + iidx + 1) + "] + " + "fC[" + str(ifact) + "][2]*ref[" +
+                                        str(y + iidx + 2) + "] + " + "fC[" + str(ifact) + "][3]*ref[" + str(y + iidx + 3) + "]")        
             self.equations.append(current_column)
 
         df = pd.DataFrame(list(zip(*self.equations)),columns = columns)
@@ -170,8 +170,8 @@ class TransformBlock:
         # Auto-adjust columns' width
         for column in df:
             column_width = 70
-            col_idx = df.columns.get_loc(column)
-            excel_writer.sheets['equations'].set_column(col_idx, col_idx, column_width)
+            col_iidx = df.columns.get_loc(column)
+            excel_writer.sheets['equations'].set_column(col_iidx, col_iidx, column_width)
 
         excel_writer._save()
         return equations
@@ -179,22 +179,22 @@ class TransformBlock:
     def calculate_equation_with_reuse(self, buffer, x):
         columns.append(x)
         current_column = []
-        iIdx = ((x + 1)*self.intraPredAngle) >> 5
-        iFact = ((x + 1)*self.intraPredAngle) & 31
+        iidx = ((x + 1)*self.intraPredAngle) >> 5
+        ifact = ((x + 1)*self.intraPredAngle) & 31
         for y in range(self.nTbH):
-            if(iFact in buffer):
-                if((y + iIdx) in buffer[iFact]):
-                    current_column.append("reuso: " + str(buffer[iFact][y + iIdx]))   
+            if(ifact in buffer):
+                if((y + iidx) in buffer[ifact]):
+                    current_column.append("reuso: " + str(buffer[ifact][y + iidx]))   
                 else:
-                    current_column.append("fC[" + str(iFact) + "][0]*ref[" + str(y + iIdx + 0) + "] + " + "fC[" + str(iFact) +
-                                            "][1]*ref[" + str(y + iIdx + 1) + "] + " + "fC[" + str(iFact) + "][2]*ref[" +
-                                            str(y + iIdx + 2) + "] + " + "fC[" + str(iFact) + "][3]*ref[" + str(y + iIdx + 3) + "]")
-                    buffer[iFact][y + iIdx] = str(self.predModeIntra) + " : " str(x)
+                    current_column.append("fC[" + str(ifact) + "][0]*ref[" + str(y + iidx + 0) + "] + " + "fC[" + str(ifact) +
+                                            "][1]*ref[" + str(y + iidx + 1) + "] + " + "fC[" + str(ifact) + "][2]*ref[" +
+                                            str(y + iidx + 2) + "] + " + "fC[" + str(ifact) + "][3]*ref[" + str(y + iidx + 3) + "]")
+                    buffer[ifact][y + iidx] = str(self.predModeIntra) + " : " + str(x)
             else:
-                current_column.append("fC[" + str(iFact) + "][0]*ref[" + str(y + iIdx + 0) + "] + " + "fC[" + str(iFact) +
-                                            "][1]*ref[" + str(y + iIdx + 1) + "] + " + "fC[" + str(iFact) + "][2]*ref[" +
-                                            str(y + iIdx + 2) + "] + " + "fC[" + str(iFact) + "][3]*ref[" + str(y + iIdx + 3) + "]")
-                buffer[iFact][y + iIdx] = str(self.predModeIntra) + " : " str(x) + "," + str(y)
+                current_column.append("fC[" + str(ifact) + "][0]*ref[" + str(y + iidx + 0) + "] + " + "fC[" + str(ifact) +
+                                            "][1]*ref[" + str(y + iidx + 1) + "] + " + "fC[" + str(ifact) + "][2]*ref[" +
+                                            str(y + iidx + 2) + "] + " + "fC[" + str(ifact) + "][3]*ref[" + str(y + iidx + 3) + "]")
+                buffer[ifact][y + iidx] = str(self.predModeIntra) + " : " + str(x) + "," + str(y)
 
             self.equations_reuse.append(current_column)
     
@@ -211,10 +211,10 @@ class TransformBlock:
     def transform_dict_to_array(self, begin, end, normalize):
         ref = []
         for i in range(begin, end + 1):
-            last_iIdx = (((self.nTbW - 1) + 1)*self.intraPredAngle) >> 5 #iIdx da última posição de x ou y
-            if(last_iIdx < 0):
+            last_iidx = (((self.nTbW - 1) + 1)*self.intraPredAngle) >> 5 #iidx da última posição de x ou y
+            if(last_iidx < 0):
                 if(not(normalize)):
-                    if(i < last_iIdx):
+                    if(i < last_iidx):
                         ref.append("NU")
                     else:
                         ref.append(self.ref[i])
@@ -222,7 +222,7 @@ class TransformBlock:
                     ref.append(self.ref[i])
             else:
                 if(not(normalize)):
-                    if(i > (last_iIdx + (self.nTbW - 1) + 3)):
+                    if(i > (last_iidx + (self.nTbW - 1) + 3)):
                         ref.append("NU")
                     else:
                         ref.append(self.ref[i])
@@ -253,22 +253,23 @@ angles_negative = [-32,-29,-26,-23,-20,-18,-16,-14,-12,-10,-8,-6,-4,-3,-2,-1,0]
 
 def calculate_iidx_ifact(modes, angles, size):
     values_ifact = []
-    values_idx = []
+    values_iidx = []
     columns = []
     for i,j in zip(modes,angles):
         tb = TransformBlock(size, size, i, j, 0, size*2 + 2, size*2 + 2, 0)
         tb.calculate_constants_mode()
         columns.append(i)
-        values_idx.append(tb.array_iIdx)
-        values_ifact.append(tb.array_iFact)
+        values_iidx.append(tb.array_iidx)
+        values_ifact.append(tb.array_ifact)
        
-    df = pd.DataFrame(list(zip(*values_idx)),columns = columns)
-    df.to_excel(excel_writer = path + "values_idx_" + str(size) + ".xlsx")
+    df = pd.DataFrame(list(zip(*values_iidx)),columns = columns)
+    df.to_excel(excel_writer = path + "values_iidx_" + str(size) + ".xlsx")
     df = pd.DataFrame(list(zip(*values_ifact)),columns = columns)
     df.to_excel(excel_writer = path + "values_ifact_" + str(size) + ".xlsx")
 
 
-def write_samples(modes, angles, size, normalize):
+
+def calculate_samples(modes, angles, size, normalize):
     values_ref = []
     values_id = []
     columns = []
@@ -301,12 +302,121 @@ def write_samples(modes, angles, size, normalize):
         df.to_excel(excel_writer = path + "ref_" + str(size) + ".xlsx")
 
 
-def calculate_equations(modes, angles,size):
+def calculate_equations(modes, angles, size):
     for i,j in zip(modes,angles):
         tb = TransformBlock(size, size, i, j, 0, size*2 + 2, size*2 + 2, 0)
         tb.calculate_equations_mode()
 
 
+def calculate_states(modes, angles, block_size, state_size):
+    values_ifact = []
+    values_iidx = []
+    columns = []
+
+    for i,j in zip(modes,angles):
+        tb = TransformBlock(block_size, block_size, i, j, 0, block_size*2 + 2, block_size*2 + 2, 0)
+        tb.calculate_constants_mode()
+        columns.append(i)
+        values_iidx.append(tb.array_iidx)
+        values_ifact.append(tb.array_ifact)
+
+
+    array_states_mods_iidx = []
+    array_states_mods_ifact = []
+    for i,j in zip(values_iidx,values_ifact):
+        base = 0
+        count = -1
+        n_state_iidx = 0
+        n_state_ifact = 0
+        state_iidx = ""
+        state_ifact = []
+        array_states_iidx = ["Null" for x in range(int(32/state_size))] #it has at most 32/state_size states, because at 32 it starts to repeat
+        array_states_ifact = ["Null" for x in range(int(32/state_size))] #it has at most 32/state_size states, because at 32 it starts to repeat
+        for iidx,ifact in zip(i,j):
+            if(base == iidx):
+                state_iidx = state_iidx + "0"
+            else:
+                state_iidx = state_iidx + "1"
+            base = iidx
+            count = count + 1
+            state_ifact.append(ifact)
+            if((count + 1)%state_size == 0):
+                if(state_iidx in array_states_iidx):
+                    pass
+                else:
+                    array_states_iidx[n_state_iidx] = state_iidx
+                    n_state_iidx = n_state_iidx + 1
+                state_iidx = ""
+                
+            if((count + 1)%state_size == 0):
+                if(state_ifact in array_states_ifact):
+                    pass
+                else:
+                    array_states_ifact[n_state_ifact] = state_ifact
+                    n_state_ifact = n_state_ifact + 1
+                state_ifact = []
+                
+        array_states_mods_iidx.append(array_states_iidx)
+        array_states_mods_ifact.append(array_states_ifact)
+
+    df_iidx = pd.DataFrame(list(zip(*array_states_mods_iidx)), columns = columns)
+    df_iidx.to_excel(excel_writer = path + "states_iidx_" + str(block_size) + "_" + str(state_size) + ".xlsx")
+    df_ifact = pd.DataFrame(list(zip(*array_states_mods_ifact)), columns = columns)
+    df_ifact.to_excel(excel_writer = path + "states_ifact_" + str(block_size) + "_" + str(state_size) + ".xlsx")
+    return df_iidx
+    
+def calculate_MCM_blocks(state_iidx, state_ifact):
+    constant_vectors = {}
+    
+    #Number of fases equals to the size of the block 
+    
+    #Initial fase
+    base = 0
+    for i,j in zip(state_iidx, range(len(state_iidx))):
+        if(int(i) == 0): #base is not changing
+           pass
+        else:
+            base = base + 1
+        
+        if(base not in constant_vectors):
+            constant_vectors[base] = []
+        if((base + 1) not in constant_vectors):
+            constant_vectors[base + 1] = []
+        if((base + 2) not in constant_vectors):
+            constant_vectors[base + 2] = []
+        if((base + 3) not in constant_vectors):
+            constant_vectors[base + 3] = []
+        
+        constant_vectors[base].append(str(state_ifact[j]) + "[0]")
+        constant_vectors[base + 1].append(str(state_ifact[j]) + "[1]")
+        constant_vectors[base + 2].append(str(state_ifact[j]) + "[2]")
+        constant_vectors[base + 3].append(str(state_ifact[j]) + "[3]")
+    
+    downward_constants = []
+    for constants in constant_vectors.values():
+        downward_constants.append(constants.copy())
+
+    downward_index = 0
+    #Run throught the remaning fases
+    for fase in range(2,len(state_iidx) + 1):
+        for i in range(len(downward_constants)):
+            index = downward_index + i + 1
+            if(index not in constant_vectors):
+                constant_vectors[index] = []
+            
+            constant_vectors[index].append(downward_constants[i])
+
+        downward_index = downward_index + 1   
+
+
+
+
+
+#calculate_states(modes1, angles1, 64, 4)
+calculate_MCM_blocks("0001",[8,16,24,0])
+                
+                
+        
 
 
 
