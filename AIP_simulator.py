@@ -24,7 +24,7 @@ class TransformBlock:
     '''
 
     
-    def __init__(self, nTbW, nTbH, predModeIntra, intraPredAngle, refidx, refW, refH, cidx):
+    def __init__(self, nTbW, nTbH, predModeIntra, intraPredAngle, refidx = 0, refW = 0, refH = 0, cidx = 0):
         #Initialize inputs
         self.nTbW = nTbW
         self.nTbH = nTbH
@@ -176,7 +176,7 @@ class TransformBlock:
         excel_writer._save()
         return equations
 
-    def calculate_equation_with_reuse(self, buffer, x):
+    '''def calculate_equation_with_reuse(self, buffer, x):
         columns.append(x)
         current_column = []
         iidx = ((x + 1)*self.intraPredAngle) >> 5
@@ -196,7 +196,7 @@ class TransformBlock:
                                             str(y + iidx + 2) + "] + " + "fC[" + str(ifact) + "][3]*ref[" + str(y + iidx + 3) + "]")
                 buffer[ifact][y + iidx] = str(self.predModeIntra) + " : " + str(x) + "," + str(y)
 
-            self.equations_reuse.append(current_column)
+            self.equations_reuse.append(current_column)'''
     
     
     def print_reference_sample_array(self):
@@ -365,18 +365,25 @@ def calculate_states(modes, angles, block_size, state_size):
     df_ifact.to_excel(excel_writer = path + "states_ifact_" + str(block_size) + "_" + str(state_size) + ".xlsx")
     return df_iidx
     
-def calculate_MCM_blocks(state_iidx, state_ifact):
+def calculate_MCM_blocks(mode, state_iidx, state_ifact, base = 0):
+    downward_index = base #downward will begin from the base
     constant_vectors = {}
     
     #Number of fases equals to the size of the block 
     
     #Initial fase
-    base = 0
     for i,j in zip(state_iidx, range(len(state_iidx))):
         if(int(i) == 0): #base is not changing
            pass
         else:
-            base = base + 1
+            if(mode >= 34):
+                if(mode >= 50):
+                    base = base + 1
+                else:
+                    base = base - 1
+            else:
+                #TODO modes < 34
+                pass
         
         if(base not in constant_vectors):
             constant_vectors[base] = []
@@ -396,7 +403,15 @@ def calculate_MCM_blocks(state_iidx, state_ifact):
     for constants in constant_vectors.values():
         downward_constants.append(constants.copy())
 
-    downward_index = 0
+    if(mode >= 34):
+        if(mode >= 50):
+            pass #downward will begin from the base
+        else: #negative iidx values only exists to modes < 50
+            downward_index = base #downward will begin from the lowest of the negative values
+    else:
+        #TODO modes < 34
+        pass
+
     #Run throught the remaning fases
     for fase in range(2,len(state_iidx) + 1):
         for i in range(len(downward_constants)):
@@ -404,16 +419,20 @@ def calculate_MCM_blocks(state_iidx, state_ifact):
             if(index not in constant_vectors):
                 constant_vectors[index] = []
             
-            constant_vectors[index].append(downward_constants[i])
+            constant_vectors[index] = constant_vectors[index] + downward_constants[i]
 
         downward_index = downward_index + 1   
 
+    for i,j in zip(constant_vectors.values(),constant_vectors.keys()):
+        print(j, i)
 
-
-
+def calculate_adders(state_iidx, state_ifact, base = 0):
+    pass
 
 #calculate_states(modes1, angles1, 64, 4)
-calculate_MCM_blocks("0001",[8,16,24,0])
+calculate_MCM_blocks(56,"0001",[8,16,24,0])
+calculate_MCM_blocks(56,"0001",[8,16,24,0], 1)
+calculate_MCM_blocks(44,"1000",[24,16,8,0])
                 
                 
         
