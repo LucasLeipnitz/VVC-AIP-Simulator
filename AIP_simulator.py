@@ -365,7 +365,7 @@ def calculate_states(modes, angles, block_size, state_size):
     df_ifact.to_excel(excel_writer = path + "states_ifact_" + str(block_size) + "_" + str(state_size) + ".xlsx")
     return df_iidx
     
-def calculate_MCM_blocks(mode, state_iidx, state_ifact, base = 0):
+def calculate_MCM_blocks(mode, state_iidx, state_ifact, base = 0, replicate = 0):
     downward_index = base #downward will begin from the base
     constant_vectors = {}
     
@@ -419,7 +419,9 @@ def calculate_MCM_blocks(mode, state_iidx, state_ifact, base = 0):
             if(index not in constant_vectors):
                 constant_vectors[index] = []
             
-            constant_vectors[index] = constant_vectors[index] + downward_constants[i]
+            for j in downward_constants[i]:
+                if(j not in constant_vectors[index] or replicate):
+                    constant_vectors[index].append(j)
 
         downward_index = downward_index + 1   
 
@@ -430,9 +432,10 @@ def calculate_adders(state_iidx, state_ifact, base = 0):
     pass
 
 #calculate_states(modes1, angles1, 64, 4)
-calculate_MCM_blocks(56,"0001",[8,16,24,0])
-calculate_MCM_blocks(56,"0001",[8,16,24,0], 1)
-calculate_MCM_blocks(44,"1000",[24,16,8,0])
+#calculate_MCM_blocks(56,"0001",[8,16,24,0])
+#calculate_MCM_blocks(56,"0001",[8,16,24,0], 1)
+#calculate_MCM_blocks(44,"1000",[24,16,8,0])
+calculate_MCM_blocks(56,"00010001",[8,16,24,0,8,16,24,0])
                 
                 
         
