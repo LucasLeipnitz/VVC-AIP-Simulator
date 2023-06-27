@@ -165,6 +165,7 @@ def calculate_states(modes, angles, block_size, state_size):
     for i,j in zip(values_iidx,values_ifact):
         base = 0
         count = -1
+        base_counter = 0
         n_state_iidx = 0
         n_state_ifact = 0
         state_iidx = ""
@@ -173,9 +174,10 @@ def calculate_states(modes, angles, block_size, state_size):
         array_states_ifact = ["Null" for x in range(int(32/state_size))] #it has at most 32/state_size states, because at 32 it starts to repeat
         for iidx,ifact in zip(i,j):
             if(base == iidx):
-                state_iidx = state_iidx + "0"
+                state_iidx = state_iidx + str(base_counter)
             else:
-                state_iidx = state_iidx + "1"
+                base_counter = base_counter + 1
+                state_iidx = state_iidx + str(base_counter)
             base = iidx
             count = count + 1
             state_ifact.append(ifact)
@@ -186,6 +188,7 @@ def calculate_states(modes, angles, block_size, state_size):
                     array_states_iidx[n_state_iidx] = state_iidx
                     n_state_iidx = n_state_iidx + 1
                 state_iidx = ""
+                base_counter = 0
                 
             if((count + 1)%state_size == 0):
                 if(state_ifact in array_states_ifact):
@@ -204,67 +207,77 @@ def calculate_states(modes, angles, block_size, state_size):
     df_ifact.to_excel(excel_writer = path + "states_ifact_" + str(block_size) + "_" + str(state_size) + ".xlsx")
     return df_iidx
     
-def calculate_MCM_blocks(mode, state_iidx, state_ifact, base = 0, height = 0, replicate = 0, print_values = 0):
+def calculate_MCM_blocks(mode, state_iidx, state_ifact, base = 0, height = 1, replicate = 0, print_values = 0):
     downward_index = base #downward will begin from the base
     constants_vectors = {}
-    if(height == 0):
-        height = len(state_iidx)
+    variation = 0
     
     #Number of fases equals to the size of the block 
     
     #Initial fase
-    for i,j in zip(state_iidx, range(height)):
-        if(int(i) == 0): #base is not changing
+    for i,j in zip(state_iidx, range(len(state_iidx))):
+        variation = int(i) - variation
+        if(variation == 0):
            pass
         else:
+            variation = int(i)
             if(mode >= 34):
                 if(mode >= 50):
-                    base = base + 1
+                    base = base + int(i)
                 else:
-                    base = base - 1
+                    base = base - int(i)
             else:
                 #TODO modes < 34
                 pass
         
         if(base not in constants_vectors):
             constants_vectors[base] = []
+        
+        constants_vectors[base].append(str(state_ifact[j]) + "[0]")
+        
         if((base + 1) not in constants_vectors):
             constants_vectors[base + 1] = []
+
+        constants_vectors[base + 1].append(str(state_ifact[j]) + "[1]")
+    
         if((base + 2) not in constants_vectors):
             constants_vectors[base + 2] = []
+        
+        constants_vectors[base + 2].append(str(state_ifact[j]) + "[2]")
+    
         if((base + 3) not in constants_vectors):
             constants_vectors[base + 3] = []
         
-        constants_vectors[base].append(str(state_ifact[j]) + "[0]")
-        constants_vectors[base + 1].append(str(state_ifact[j]) + "[1]")
-        constants_vectors[base + 2].append(str(state_ifact[j]) + "[2]")
         constants_vectors[base + 3].append(str(state_ifact[j]) + "[3]")
-    
-    downward_constants = []
-    for constants in constants_vectors.values():
-        downward_constants.append(constants.copy())
-
-    if(mode >= 34):
-        if(mode >= 50):
-            pass #downward will begin from the base
-        else: #negative iidx values only exists to modes < 50
-            downward_index = base #downward will begin from the lowest of the negative values
+        
+    if(height == 1):
+        pass #dont need to calculate other lines, only the first fase is necessary
     else:
-        #TODO modes < 34
-        pass
+        downward_constants = []
+        for constants in constants_vectors.values():
+            downward_constants.append(constants.copy())
 
-    #Run throught the remaning fases
-    for fase in range(2,height + 1):
-        for i in range(len(downward_constants)):
-            index = downward_index + i + 1
-            if(index not in constants_vectors):
-                constants_vectors[index] = []
-            
-            for j in downward_constants[i]:
-                if(j not in constants_vectors[index] or replicate):
-                    constants_vectors[index].append(j)
+        if(mode >= 34):
+            if(mode >= 50):
+                pass #downward will begin from the base
+            else: #negative iidx values only exists to modes < 50
+                downward_index = base #downward will begin from the lowest of the negative values
+        else:
+            #TODO modes < 34
+            pass
 
-        downward_index = downward_index + 1   
+        #Run throught the remaning fases
+        for fase in range(2, height + 1):
+            for i in range(len(downward_constants)):
+                index = downward_index + i + 1
+                if(index not in constants_vectors):
+                    constants_vectors[index] = []
+                
+                for j in downward_constants[i]:
+                    if(j not in constants_vectors[index] or replicate):
+                        constants_vectors[index].append(j)
+
+            downward_index = downward_index + 1   
 
     if(print_values):
         print("############################################")
@@ -311,12 +324,14 @@ def merge_states(constants_or_coefficients_list, replicate = 0, print_values = 0
 def calculate_adders(state_iidx, state_ifact, base = 0):
     pass
 
-#calculate_states(modes1, angles1, 64, 4)
+#calculate_states(modes1, angles1, 64, 8)
 #calculate_MCM_blocks(56,"0001",[8,16,24,0])
 #calculate_MCM_blocks(56,"0001",[8,16,24,0], 1)
 #calculate_MCM_blocks(44,"1000",[24,16,8,0])
 #calculate_MCM_blocks(56,"00010001",[8,16,24,0,8,16,24,0], height = 8, print_values = 1)
-map_to_coefficients(calculate_MCM_blocks(56,"00010001",[8,16,24,0,8,16,24,0]), fc_coefficients, print_values = 1)
+#calculate_MCM_blocks(56,"00010001",[8,16,24,0,8,16,24,0], height = 1, print_values = 1)
+#calculate_MCM_blocks(56,"0001",[8,16,24,0], height = 2, print_values = 1)
+'''map_to_coefficients(calculate_MCM_blocks(56,"00010001",[8,16,24,0,8,16,24,0]), fc_coefficients, print_values = 1)
 map_to_coefficients(calculate_MCM_blocks(35,"11111111",[3, 6, 9, 12, 15, 18, 21, 24]), fc_coefficients, print_values = 1)
 map_to_coefficients(calculate_MCM_blocks(35,"11011111",[27, 30, 1, 4, 7, 10, 13, 16]), fc_coefficients, print_values = 1)
 map_to_coefficients(calculate_MCM_blocks(35,"11111011",[19, 22, 25, 28, 31, 2, 5, 8]), fc_coefficients, print_values = 1)
@@ -325,9 +340,13 @@ coef = []
 coef.append(map_to_coefficients(calculate_MCM_blocks(35,"11111111",[3, 6, 9, 12, 15, 18, 21, 24]), fc_coefficients))
 coef.append(map_to_coefficients(calculate_MCM_blocks(35,"11011111",[27, 30, 1, 4, 7, 10, 13, 16]), fc_coefficients))
 coef.append(map_to_coefficients(calculate_MCM_blocks(35,"11111011",[19, 22, 25, 28, 31, 2, 5, 8]), fc_coefficients))
-coef.append(map_to_coefficients(calculate_MCM_blocks(35,"11111110",[11, 14, 17, 20, 23, 26, 29, 0]), fc_coefficients))
+coef.append(map_to_coefficients(calculate_MCM_blocks(35,"11111110",[11, 14, 17, 20, 23, 26, 29, 0]), fc_coefficients))'''
 
-merge_states(coef, print_values = 1)               
+#merge_states(coef, print_values = 1)
+calculate_MCM_blocks(59,"00101010",[14, 28, 10, 24, 6, 20, 2, 16], height = 1, print_values = 1)    
+calculate_MCM_blocks(59,"01010101",[30, 12, 26, 8, 22, 4, 18, 0], height = 1, base = 3, print_values = 1)
+calculate_MCM_blocks(59,"00101010",[14, 28, 10, 24, 6, 20, 2, 16], height = 1, base = 7, print_values = 1)
+calculate_MCM_blocks(59,"01010101",[30, 12, 26, 8, 22, 4, 18, 0], height = 1, base = 10, print_values = 1)              
                 
         
 
