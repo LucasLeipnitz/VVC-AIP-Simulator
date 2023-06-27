@@ -88,7 +88,7 @@ fc_coefficients = {
 }
 
 def simmetry_rule(p, index):
-    return 32 - p, 3 - index
+    return str(32 - int(p)), str(3 - int(index))
 
 def calculate_iidx_ifact(modes, angles, size):
     values_ifact = []
@@ -204,14 +204,16 @@ def calculate_states(modes, angles, block_size, state_size):
     df_ifact.to_excel(excel_writer = path + "states_ifact_" + str(block_size) + "_" + str(state_size) + ".xlsx")
     return df_iidx
     
-def calculate_MCM_blocks(mode, state_iidx, state_ifact, base = 0, replicate = 0):
+def calculate_MCM_blocks(mode, state_iidx, state_ifact, base = 0, height = 0, replicate = 0, print_values = 0):
     downward_index = base #downward will begin from the base
-    constant_vectors = {}
+    constants_vectors = {}
+    if(height == 0):
+        height = len(state_iidx)
     
     #Number of fases equals to the size of the block 
     
     #Initial fase
-    for i,j in zip(state_iidx, range(len(state_iidx))):
+    for i,j in zip(state_iidx, range(height)):
         if(int(i) == 0): #base is not changing
            pass
         else:
@@ -224,22 +226,22 @@ def calculate_MCM_blocks(mode, state_iidx, state_ifact, base = 0, replicate = 0)
                 #TODO modes < 34
                 pass
         
-        if(base not in constant_vectors):
-            constant_vectors[base] = []
-        if((base + 1) not in constant_vectors):
-            constant_vectors[base + 1] = []
-        if((base + 2) not in constant_vectors):
-            constant_vectors[base + 2] = []
-        if((base + 3) not in constant_vectors):
-            constant_vectors[base + 3] = []
+        if(base not in constants_vectors):
+            constants_vectors[base] = []
+        if((base + 1) not in constants_vectors):
+            constants_vectors[base + 1] = []
+        if((base + 2) not in constants_vectors):
+            constants_vectors[base + 2] = []
+        if((base + 3) not in constants_vectors):
+            constants_vectors[base + 3] = []
         
-        constant_vectors[base].append(str(state_ifact[j]) + "[0]")
-        constant_vectors[base + 1].append(str(state_ifact[j]) + "[1]")
-        constant_vectors[base + 2].append(str(state_ifact[j]) + "[2]")
-        constant_vectors[base + 3].append(str(state_ifact[j]) + "[3]")
+        constants_vectors[base].append(str(state_ifact[j]) + "[0]")
+        constants_vectors[base + 1].append(str(state_ifact[j]) + "[1]")
+        constants_vectors[base + 2].append(str(state_ifact[j]) + "[2]")
+        constants_vectors[base + 3].append(str(state_ifact[j]) + "[3]")
     
     downward_constants = []
-    for constants in constant_vectors.values():
+    for constants in constants_vectors.values():
         downward_constants.append(constants.copy())
 
     if(mode >= 34):
@@ -252,20 +254,59 @@ def calculate_MCM_blocks(mode, state_iidx, state_ifact, base = 0, replicate = 0)
         pass
 
     #Run throught the remaning fases
-    for fase in range(2,len(state_iidx) + 1):
+    for fase in range(2,height + 1):
         for i in range(len(downward_constants)):
             index = downward_index + i + 1
-            if(index not in constant_vectors):
-                constant_vectors[index] = []
+            if(index not in constants_vectors):
+                constants_vectors[index] = []
             
             for j in downward_constants[i]:
-                if(j not in constant_vectors[index] or replicate):
-                    constant_vectors[index].append(j)
+                if(j not in constants_vectors[index] or replicate):
+                    constants_vectors[index].append(j)
 
         downward_index = downward_index + 1   
 
-    for i,j in zip(constant_vectors.values(),constant_vectors.keys()):
-        print(j, i)
+    if(print_values):
+        print("############################################")
+        for i,j in zip(constants_vectors.values(),constants_vectors.keys()):
+            print(j, i)
+    
+    return constants_vectors
+
+def map_to_coefficients(constants_vectors, coefficients, replicate = 0, print_values = 0):
+    coefficients_vectors = {}
+
+    for i,j in zip(constants_vectors.values(),constants_vectors.keys()):
+        coefficients_vectors[j] = []
+        for constant in i:
+
+            if(constant not in coefficients):
+                p, index = re.findall(r'\d+', constant) #get p[index] from string containing and put it in two separately variables
+                p, index = simmetry_rule(p, index) #transform in a value that exists in the coefficients by the simmetry rule
+                value = coefficients[p + '[' + index + ']']
+            else:
+                value = coefficients[constant]
+            
+            if(value not in coefficients_vectors[j] or replicate):
+                    coefficients_vectors[j].append(value)
+
+    if(print_values):
+        print("############################################")
+        for i,j in zip(coefficients_vectors.values(),coefficients_vectors.keys()):
+            print(j, i)
+
+    return coefficients_vectors
+
+#NOT WORKING
+def merge_states(constants_or_coefficients_list, replicate = 0, print_values = 0):
+    merged_constants_or_coefficients = {}
+    for i in constants_or_coefficients_list:
+        merged_constants_or_coefficients = merged_constants_or_coefficients | i
+
+    if(print_values):
+        print("############################################")
+        for i,j in zip(merged_constants_or_coefficients.values(),merged_constants_or_coefficients.keys()):
+            print(j, i)
 
 def calculate_adders(state_iidx, state_ifact, base = 0):
     pass
@@ -274,8 +315,19 @@ def calculate_adders(state_iidx, state_ifact, base = 0):
 #calculate_MCM_blocks(56,"0001",[8,16,24,0])
 #calculate_MCM_blocks(56,"0001",[8,16,24,0], 1)
 #calculate_MCM_blocks(44,"1000",[24,16,8,0])
-calculate_MCM_blocks(56,"00010001",[8,16,24,0,8,16,24,0])
-                
+#calculate_MCM_blocks(56,"00010001",[8,16,24,0,8,16,24,0], height = 8, print_values = 1)
+map_to_coefficients(calculate_MCM_blocks(56,"00010001",[8,16,24,0,8,16,24,0]), fc_coefficients, print_values = 1)
+map_to_coefficients(calculate_MCM_blocks(35,"11111111",[3, 6, 9, 12, 15, 18, 21, 24]), fc_coefficients, print_values = 1)
+map_to_coefficients(calculate_MCM_blocks(35,"11011111",[27, 30, 1, 4, 7, 10, 13, 16]), fc_coefficients, print_values = 1)
+map_to_coefficients(calculate_MCM_blocks(35,"11111011",[19, 22, 25, 28, 31, 2, 5, 8]), fc_coefficients, print_values = 1)
+map_to_coefficients(calculate_MCM_blocks(35,"11111110",[11, 14, 17, 20, 23, 26, 29, 0]), fc_coefficients, print_values = 1)
+coef = []
+coef.append(map_to_coefficients(calculate_MCM_blocks(35,"11111111",[3, 6, 9, 12, 15, 18, 21, 24]), fc_coefficients))
+coef.append(map_to_coefficients(calculate_MCM_blocks(35,"11011111",[27, 30, 1, 4, 7, 10, 13, 16]), fc_coefficients))
+coef.append(map_to_coefficients(calculate_MCM_blocks(35,"11111011",[19, 22, 25, 28, 31, 2, 5, 8]), fc_coefficients))
+coef.append(map_to_coefficients(calculate_MCM_blocks(35,"11111110",[11, 14, 17, 20, 23, 26, 29, 0]), fc_coefficients))
+
+merge_states(coef, print_values = 1)               
                 
         
 
