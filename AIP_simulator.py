@@ -209,7 +209,7 @@ def calculate_states(modes, angles, block_size, state_size):
     
 def calculate_MCM_blocks(mode, state_iidx, state_ifact, base = 0, height = 1, replicate = 0, print_values = 0):
     constants_vectors = {}
-    variation = 0
+    variation = 0 #variation of state_iidx[i+1] and state_iidx[i] 
     
     #Number of fases equals to the size of the block 
     
@@ -230,7 +230,7 @@ def calculate_MCM_blocks(mode, state_iidx, state_ifact, base = 0, height = 1, re
                 #TODO modes < 34
                 pass
         
-        if(base not in constants_vectors):
+        if(downward_index not in constants_vectors):
             constants_vectors[downward_index] = []
         
         constants_vectors[downward_index].append(str(state_ifact[j]) + "[0]")
@@ -325,6 +325,7 @@ def calculate_adders(state_iidx, state_ifact, base = 0):
     pass
 
 #calculate_states(modes1, angles1, 64, 32)
+calculate_states(modes1, angles1, 64, 16)
 #calculate_MCM_blocks(56,"0001",[8,16,24,0])
 #calculate_MCM_blocks(56,"0001",[8,16,24,0], 1)
 #calculate_MCM_blocks(44,"1000",[24,16,8,0])
@@ -361,8 +362,9 @@ calculate_MCM_blocks(59,"01122334",[30, 12, 26, 8, 22, 4, 18, 0], height = 1, ba
 #map_to_coefficients(calculate_MCM_blocks(51,[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 0], height = 1),fc_coefficients ,print_values = 1)     
 
 #calculate_MCM_blocks(51,[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], height = 1, print_values = 1)
-#calculate_MCM_blocks(51,[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 0], height = 1, base = 0,print_values = 1)
-map_to_coefficients(calculate_MCM_blocks(51,[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], height = 1), fc_coefficients ,print_values = 1)
-map_to_coefficients(calculate_MCM_blocks(51,[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], height = 1), fc_coefficients ,print_values = 1)
-
+#calculate_MCM_blocks(51,[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], height = 1, base = 0,print_values = 1)
+#map_to_coefficients(calculate_MCM_blocks(51,[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], height = 1), fc_coefficients ,print_values = 1)
+#map_to_coefficients(calculate_MCM_blocks(51,[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, height = 1), fc_coefficients ,print_values = 1)
+#map_to_coefficients(calculate_MCM_blocks(66,[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], height = 1), fc_coefficients ,print_values = 1)
+#map_to_coefficients(calculate_MCM_blocks(66,[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], height = 1, base = 16), fc_coefficients ,print_values = 1)
 
