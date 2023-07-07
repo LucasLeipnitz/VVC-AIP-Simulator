@@ -5,7 +5,7 @@ import re
 from collections import defaultdict
 from transform_block import TransformBlock
 
-path = "~/VVC-AIP-Simulator"
+path = "./"
 
 modes1 = [34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66]
 modes2 = [2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34]
@@ -90,6 +90,7 @@ fc_coefficients = {
 def simmetry_rule(p, index):
     return str(32 - int(p)), str(3 - int(index))
 
+
 def calculate_iidx_ifact(modes, angles, size):
     values_ifact = []
     values_iidx = []
@@ -105,7 +106,6 @@ def calculate_iidx_ifact(modes, angles, size):
     df.to_excel(excel_writer = path + "values_iidx_" + str(size) + ".xlsx")
     df = pd.DataFrame(list(zip(*values_ifact)),columns = columns)
     df.to_excel(excel_writer = path + "values_ifact_" + str(size) + ".xlsx")
-
 
 
 def calculate_samples(modes, angles, size, normalize):
@@ -147,7 +147,7 @@ def calculate_equations(modes, angles, size):
         tb.calculate_equations_mode()
 
 
-def calculate_states(modes, angles, block_size, state_size):
+def calculate_states(modes, angles, block_size, state_size, excel = 0):
     values_ifact = []
     values_iidx = []
     columns = []
@@ -170,8 +170,8 @@ def calculate_states(modes, angles, block_size, state_size):
         n_state_ifact = 0
         state_iidx = []
         state_ifact = []
-        array_states_iidx = ["Null" for x in range(int(32/state_size))] #it has at most 32/state_size states, because at 32 it starts to repeat
-        array_states_ifact = ["Null" for x in range(int(32/state_size))] #it has at most 32/state_size states, because at 32 it starts to repeat
+        array_states_iidx = ["Null" for x in range(int(block_size/state_size))] #it has at most 32/state_size states, because at 32 it starts to repeat
+        array_states_ifact = ["Null" for x in range(int(block_size/state_size))] #it has at most 32/state_size states, because at 32 it starts to repeat
         for iidx,ifact in zip(i,j):
             if(base == iidx):
                 state_iidx.append(base_counter)
@@ -202,11 +202,15 @@ def calculate_states(modes, angles, block_size, state_size):
         array_states_mods_ifact.append(array_states_ifact)
 
     df_iidx = pd.DataFrame(list(zip(*array_states_mods_iidx)), columns = columns)
-    df_iidx.to_excel(excel_writer = path + "states_iidx_" + str(block_size) + "_" + str(state_size) + ".xlsx")
     df_ifact = pd.DataFrame(list(zip(*array_states_mods_ifact)), columns = columns)
-    df_ifact.to_excel(excel_writer = path + "states_ifact_" + str(block_size) + "_" + str(state_size) + ".xlsx")
-    return df_iidx
+
+    if(excel):
+        df_iidx.to_excel(excel_writer = path + "states_iidx_" + str(block_size) + "_" + str(state_size) + ".xlsx")
+        df_ifact.to_excel(excel_writer = path + "states_ifact_" + str(block_size) + "_" + str(state_size) + ".xlsx")
     
+    return df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact
+
+   
 def calculate_MCM_blocks(mode, state_iidx, state_ifact, base = 0, height = 1, replicate = 0, print_values = 0):
     constants_vectors = {}
     variation = 0 #variation of state_iidx[i+1] and state_iidx[i] 
@@ -286,13 +290,13 @@ def calculate_MCM_blocks(mode, state_iidx, state_ifact, base = 0, height = 1, re
     
     return constants_vectors
 
-def map_to_coefficients(constants_vectors, coefficients, replicate = 0, print_values = 0):
+
+def map_to_coefficients(constants_vectors, coefficients, print_values = 0):
     coefficients_vectors = {}
 
     for i,j in zip(constants_vectors.values(),constants_vectors.keys()):
         coefficients_vectors[j] = []
         for constant in i:
-
             if(constant not in coefficients):
                 p, index = re.findall(r'\d+', constant) #get p[index] from string containing and put it in two separately variables
                 p, index = simmetry_rule(p, index) #transform in a value that exists in the coefficients by the simmetry rule
@@ -300,7 +304,7 @@ def map_to_coefficients(constants_vectors, coefficients, replicate = 0, print_va
             else:
                 value = coefficients[constant]
             
-            if(value not in coefficients_vectors[j] or replicate):
+            if(value not in coefficients_vectors[j]):
                     coefficients_vectors[j].append(value)
 
     if(print_values):
@@ -309,6 +313,7 @@ def map_to_coefficients(constants_vectors, coefficients, replicate = 0, print_va
             print(j, i)
 
     return coefficients_vectors
+
 
 #NOT WORKING
 def merge_states(constants_or_coefficients_list, replicate = 0, print_values = 0):
@@ -321,50 +326,141 @@ def merge_states(constants_or_coefficients_list, replicate = 0, print_values = 0
         for i,j in zip(merged_constants_or_coefficients.values(),merged_constants_or_coefficients.keys()):
             print(j, i)
 
-def calculate_adders(state_iidx, state_ifact, base = 0):
-    pass
 
-#calculate_states(modes1, angles1, 64, 32)
-calculate_states(modes1, angles1, 64, 16)
-#calculate_MCM_blocks(56,"0001",[8,16,24,0])
-#calculate_MCM_blocks(56,"0001",[8,16,24,0], 1)
-#calculate_MCM_blocks(44,"1000",[24,16,8,0])
-#calculate_MCM_blocks(56,"00010001",[8,16,24,0,8,16,24,0], height = 8, print_values = 1)
-#calculate_MCM_blocks(56,"00010001",[8,16,24,0,8,16,24,0], height = 1, print_values = 1)
-#calculate_MCM_blocks(56,"0001",[8,16,24,0], height = 2, print_values = 1)
-'''map_to_coefficients(calculate_MCM_blocks(56,"00010001",[8,16,24,0,8,16,24,0]), fc_coefficients, print_values = 1)
-map_to_coefficients(calculate_MCM_blocks(35,"11111111",[3, 6, 9, 12, 15, 18, 21, 24]), fc_coefficients, print_values = 1)
-map_to_coefficients(calculate_MCM_blocks(35,"11011111",[27, 30, 1, 4, 7, 10, 13, 16]), fc_coefficients, print_values = 1)
-map_to_coefficients(calculate_MCM_blocks(35,"11111011",[19, 22, 25, 28, 31, 2, 5, 8]), fc_coefficients, print_values = 1)
-map_to_coefficients(calculate_MCM_blocks(35,"11111110",[11, 14, 17, 20, 23, 26, 29, 0]), fc_coefficients, print_values = 1)
-coef = []
-coef.append(map_to_coefficients(calculate_MCM_blocks(35,"11111111",[3, 6, 9, 12, 15, 18, 21, 24]), fc_coefficients))
-coef.append(map_to_coefficients(calculate_MCM_blocks(35,"11011111",[27, 30, 1, 4, 7, 10, 13, 16]), fc_coefficients))
-coef.append(map_to_coefficients(calculate_MCM_blocks(35,"11111011",[19, 22, 25, 28, 31, 2, 5, 8]), fc_coefficients))
-coef.append(map_to_coefficients(calculate_MCM_blocks(35,"11111110",[11, 14, 17, 20, 23, 26, 29, 0]), fc_coefficients))'''
+def calculate_MCM_modes(modes, angles, block_size, state_size, height = 1, excel = 0):
+    values_ifact = []
+    values_iidx = []
+    columns = []
 
-#merge_states(coef, print_values = 1)
-
-'''calculate_MCM_blocks(59,"00112233",[14, 28, 10, 24, 6, 20, 2, 16], height = 1, print_values = 1)
-calculate_MCM_blocks(59,"01122334",[30, 12, 26, 8, 22, 4, 18, 0], height = 1, base = 3, print_values = 1)
-calculate_MCM_blocks(59,"00112233",[14, 28, 10, 24, 6, 20, 2, 16], height = 1, base = 7, print_values = 1)
-calculate_MCM_blocks(59,"01122334",[30, 12, 26, 8, 22, 4, 18, 0], height = 1, base = 10, print_values = 1)'''
+    for i,j in zip(modes,angles):
+        tb = TransformBlock(block_size, block_size, i, j, 0, block_size*2 + 2, block_size*2 + 2, 0)
+        tb.calculate_constants_mode()
+        columns.append(i)
+        values_iidx.append(tb.array_iidx)
+        values_ifact.append(tb.array_ifact)
 
 
-#map_to_coefficients(calculate_MCM_blocks(59,"00112233",[14, 28, 10, 24, 6, 20, 2, 16], height = 1), fc_coefficients, print_values = 1)    
-#map_to_coefficients(calculate_MCM_blocks(59,"01122334",[30, 12, 26, 8, 22, 4, 18, 0], height = 1, base = 3,), fc_coefficients, print_values = 1)
-#map_to_coefficients(calculate_MCM_blocks(59,"00112233",[14, 28, 10, 24, 6, 20, 2, 16], height = 1, base = 7), fc_coefficients, print_values = 1)    
-#map_to_coefficients(calculate_MCM_blocks(59,"01122334",[30, 12, 26, 8, 22, 4, 18, 0], height = 1, base = 10), fc_coefficients, print_values = 1) 
-#map_to_coefficients(calculate_MCM_blocks(59,[0,0,1,1,2,2,3,3,3,4,4,5,5,6,6,7,7,7,8,8,9,9,10,10,10,11,11,12,12,13,13,14],[14, 28, 10, 24, 6, 20, 2, 16, 30, 12, 26, 8, 22, 4, 18, 0, 14, 28, 10, 24, 6, 20, 2, 16, 30, 12, 26, 8, 22, 4, 18, 0], height = 1), fc_coefficients, print_values = 1)
-#calculate_MCM_blocks(59,[0, 0, 1, 1, 2, 2, 3, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 7, 8, 8, 9, 9, 10, 10, 10, 11, 11, 12, 12, 13, 13, 14],[14, 28, 10, 24, 6, 20, 2, 16, 30, 12, 26, 8, 22, 4, 18, 0, 14, 28, 10, 24, 6, 20, 2, 16, 30, 12, 26, 8, 22, 4, 18, 0], height = 1, print_values = 1) 
-#calculate_MCM_blocks(59,[0, 0, 1, 1, 2, 2, 3, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 7, 8, 8, 9, 9, 10, 10, 10, 11, 11, 12, 12, 13, 13, 14],[14, 28, 10, 24, 6, 20, 2, 16, 30, 12, 26, 8, 22, 4, 18, 0, 14, 28, 10, 24, 6, 20, 2, 16, 30, 12, 26, 8, 22, 4, 18, 0], height = 1, print_values = 1)          
-#calculate_MCM_blocks(51,[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 0], height = 1, print_values = 1)        
-#map_to_coefficients(calculate_MCM_blocks(51,[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 0], height = 1),fc_coefficients ,print_values = 1)     
+    array_states_mods_iidx = []
+    array_states_mods_ifact = []
+    for i,j in zip(values_iidx,values_ifact):
+        base = 0
+        count = -1
+        base_counter = 0
+        n_state_iidx = 0
+        n_state_ifact = 0
+        state_iidx = []
+        state_ifact = []
+        array_states_iidx = ["Null" for x in range(int(block_size/state_size))] #it has at most 32/state_size states, because at 32 it starts to repeat
+        array_states_ifact = ["Null" for x in range(int(block_size/state_size))] #it has at most 32/state_size states, because at 32 it starts to repeat
+        for iidx,ifact in zip(i,j):
+            if(base == iidx):
+                state_iidx.append(base_counter)
+            else:
+                base_counter = base_counter + 1
+                state_iidx.append(base_counter)
+            base = iidx
+            count = count + 1
+            state_ifact.append(ifact)
+            if((count + 1)%state_size == 0):
+                if(state_iidx in array_states_iidx):
+                    pass
+                else:
+                    array_states_iidx[n_state_iidx] = state_iidx
+                    n_state_iidx = n_state_iidx + 1
+                state_iidx = []
+                base_counter = 0
+                
+            if((count + 1)%state_size == 0):
+                if(state_ifact in array_states_ifact):
+                    pass
+                else:
+                    array_states_ifact[n_state_ifact] = state_ifact
+                    n_state_ifact = n_state_ifact + 1
+                state_ifact = []
+                
+        array_states_mods_iidx.append(array_states_iidx)
+        array_states_mods_ifact.append(array_states_ifact)
 
-#calculate_MCM_blocks(51,[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], height = 1, print_values = 1)
-#calculate_MCM_blocks(51,[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], height = 1, base = 0,print_values = 1)
-#map_to_coefficients(calculate_MCM_blocks(51,[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], height = 1), fc_coefficients ,print_values = 1)
-#map_to_coefficients(calculate_MCM_blocks(51,[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, height = 1), fc_coefficients ,print_values = 1)
-#map_to_coefficients(calculate_MCM_blocks(66,[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], height = 1), fc_coefficients ,print_values = 1)
-#map_to_coefficients(calculate_MCM_blocks(66,[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], height = 1, base = 16), fc_coefficients ,print_values = 1)
+    list_position_MCM = []
+    list_coefficients_MCM = []
+    fp = open("modes_position_MCM.txt", "w")
+    fc = open("modes_coefficients_MCM.txt", "w")
+    for mode, states_iidx, states_ifact in zip(modes, array_states_mods_iidx, array_states_mods_ifact):
+        fp.write("##########################################################\n\n" + str(mode))
+        fc.write("##########################################################\n\n" + str(mode))
+        dict_position_MCM = {}
+        dict_coefficients_MCM = {}
+        for i,j in zip(states_iidx, states_ifact):
+            if(not i == "Null"):
+                MCM_blocks = calculate_MCM_blocks(mode,i,j,height = height)
+                for key, block in zip(MCM_blocks.keys(),MCM_blocks.values()):
+                    fp.write("\n" + str(key) + ": ")
+                    dict_position_MCM[key] = []
+                    for v in block:
+                        fp.write(str(v) + ", ")
+                        dict_position_MCM[key].append(v)
+                
+                MCM_blocks = map_to_coefficients(calculate_MCM_blocks(mode,i,j,height = height),fc_coefficients)
+                for key, block in zip(MCM_blocks.keys(),MCM_blocks.values()):
+                    fc.write("\n" + str(key) + ": ")
+                    dict_coefficients_MCM[key] = []
+                    for v in block:
+                        fc.write(str(v) + ", ")
+                        dict_coefficients_MCM[key].append(v)
+
+                fp.write("\n")
+                fc.write("\n")
+                list_position_MCM.append(dict_position_MCM)
+                list_coefficients_MCM.append(dict_coefficients_MCM)
+
+        fp.write("\n")
+        fc.write("\n")
+            
+    fp.close()
+    fc.close()
+    return list_position_MCM, list_coefficients_MCM
+
+def calculate_adders(modes, list_position_MCM, list_coefficients_MCM, coefficients):
+    fa = open("modes_adders.txt", "w")
+    for mode, dict_position_MCMs, dict_coefficients_MCMs in zip(modes, list_position_MCM, list_coefficients_MCM):
+        fa.write("##########################################################\n\n" + str(mode))
+        adder_n = 0
+        for i, j in zip(dict_position_MCMs.values(), dict_position_MCMs.keys()):
+            for position_value in i:
+                p, index = re.findall(r'\d+', position_value) #get p[index] from string containing and put it in two separately variables
+                if(index == '0'):
+                    fa.write("\nAdder" + str(adder_n) + ": ")
+                    adder_n = adder_n + 1
+                    value_index = 0
+                    #search all 4 values of the filter
+                    for k in range(j, j+4):
+                        range_position_value = p + '[' + str(value_index) + ']'
+                        if(range_position_value not in coefficients):
+                            p, index = re.findall(r'\d+', range_position_value) #get p[index] from string containing and put it in two separately variables
+                            p, index = simmetry_rule(p, index) #transform in a value that exists in the coefficients by the simmetry rule
+                            value = coefficients[p + '[' + index + ']']
+                        else:
+                            value = coefficients[range_position_value]
+                        
+                        if(value == 0):
+                            pass #if values equals to zero, no need to put it on the adder
+                        else:
+                            #search for the value in list_coefficients_MCM of index k
+                            coefficient_index = 0
+                            for coefficient_value in dict_coefficients_MCMs[k]:
+                                if(coefficient_value == value):
+                                    fa.write(str(value) + "( " + str(k) + "Y" + str(coefficient_index) + " )" + ", ")
+                                else:
+                                    coefficient_index = coefficient_index + 1
+                        
+                        value_index = value_index + 1
+
+        fa.write("\n\n")              
+
+    fa.close()
+        
+
+
+list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, angles1, 32, 8)
+calculate_adders(modes1,list_position_MCM, list_coefficients_MCM,fc_coefficients)
 
