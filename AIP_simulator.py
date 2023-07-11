@@ -217,71 +217,44 @@ def calculate_MCM_blocks(mode, state_iidx, state_ifact, base = 0, height = 1, re
     
     #Number of fases equals to the size of the block 
     
-    #Initial fase
-    downward_index = base #downward will begin from the base
-    for i,j in zip(state_iidx, range(len(state_iidx))):
-        variation = int(i) - variation
-        if(variation == 0):
-           pass
-        else:
-            variation = int(i)
-            if(mode >= 34):
-                if(mode >= 50):
-                    downward_index = base + int(i)
-                else:
-                    downward_index = base - int(i)
-            else:
-                #TODO modes < 34
+    for n in range(height):
+        downward_index = base #downward will begin from the base
+        for i,j in zip(state_iidx, range(len(state_iidx))):
+            variation = int(i) - variation
+            if(variation == 0):
                 pass
-        
-        if(downward_index not in constants_vectors):
-            constants_vectors[downward_index] = []
-        
-        constants_vectors[downward_index].append(str(state_ifact[j]) + "[0]")
-        
-        if((downward_index + 1) not in constants_vectors):
-            constants_vectors[downward_index + 1] = []
+            else:
+                variation = int(i)
+                if(mode >= 34):
+                    if(mode >= 50):
+                        downward_index = base + int(i)
+                    else:
+                        downward_index = base - int(i)
+                else:
+                    #TODO modes < 34
+                    pass
+            
+            if(downward_index not in constants_vectors):
+                constants_vectors[downward_index] = []
+            
+            constants_vectors[downward_index].append(str(state_ifact[j]) + "[0]")
+            
+            if((downward_index + 1) not in constants_vectors):
+                constants_vectors[downward_index + 1] = []
 
-        constants_vectors[downward_index + 1].append(str(state_ifact[j]) + "[1]")
-    
-        if((downward_index + 2) not in constants_vectors):
-            constants_vectors[downward_index + 2] = []
+            constants_vectors[downward_index + 1].append(str(state_ifact[j]) + "[1]")
         
-        constants_vectors[downward_index + 2].append(str(state_ifact[j]) + "[2]")
-    
-        if((downward_index + 3) not in constants_vectors):
-            constants_vectors[downward_index + 3] = []
+            if((downward_index + 2) not in constants_vectors):
+                constants_vectors[downward_index + 2] = []
+            
+            constants_vectors[downward_index + 2].append(str(state_ifact[j]) + "[2]")
         
-        constants_vectors[downward_index + 3].append(str(state_ifact[j]) + "[3]")
-        
-    if(height == 1):
-        pass #dont need to calculate other lines, only the first fase is necessary
-    else:
-        downward_constants = []
-        for constants in constants_vectors.values():
-            downward_constants.append(constants.copy())
+            if((downward_index + 3) not in constants_vectors):
+                constants_vectors[downward_index + 3] = []
+            
+            constants_vectors[downward_index + 3].append(str(state_ifact[j]) + "[3]") 
 
-        if(mode >= 34):
-            if(mode >= 50):
-                downward_index = base #downward will begin from the base
-            else: #negative iidx values only exists on modes < 50
-                pass #downward will begin from the lowest of the negative values
-        else:
-            #TODO modes < 34
-            pass
-
-        #Run throught the remaning fases
-        for fase in range(2, height + 1):
-            for i in range(len(downward_constants)):
-                index = downward_index + i + 1
-                if(index not in constants_vectors):
-                    constants_vectors[index] = []
-                
-                for j in downward_constants[i]:
-                    if(j not in constants_vectors[index] or replicate):
-                        constants_vectors[index].append(j)
-
-            downward_index = downward_index + 1   
+        base = base + 1     
 
     if(print_values):
         print("############################################")
@@ -383,15 +356,19 @@ def calculate_MCM_modes(modes, angles, block_size, state_size, height = 1, excel
 
     list_position_MCM = []
     list_coefficients_MCM = []
-    fp = open("modes_position_MCM.txt", "w")
-    fc = open("modes_coefficients_MCM.txt", "w")
+    list_of_counters = {}
+    fp = open("modes_position_MCM_" + str(state_size) + "_" + str(height) + ".txt", "w")
+    fc = open("modes_coefficients_MCM_" + str(state_size) + "_" + str(height) + ".txt", "w")
     for mode, states_iidx, states_ifact in zip(modes, array_states_mods_iidx, array_states_mods_ifact):
         fp.write("##########################################################\n\n" + str(mode))
         fc.write("##########################################################\n\n" + str(mode))
         dict_position_MCM = {}
         dict_coefficients_MCM = {}
+        block_counter = 1
         for i,j in zip(states_iidx, states_ifact):
             if(not i == "Null"):
+                fp.write("\nBlock " + str(block_counter))
+                fc.write("\nBlock " + str(block_counter))
                 MCM_blocks = calculate_MCM_blocks(mode,i,j,height = height)
                 for key, block in zip(MCM_blocks.keys(),MCM_blocks.values()):
                     fp.write("\n" + str(key) + ": ")
@@ -413,8 +390,19 @@ def calculate_MCM_modes(modes, angles, block_size, state_size, height = 1, excel
                 list_position_MCM.append(dict_position_MCM)
                 list_coefficients_MCM.append(dict_coefficients_MCM)
 
+                if(block_counter not in list_of_counters.keys()):
+                    list_of_counters[block_counter] = 1
+                else:
+                    list_of_counters[block_counter] = list_of_counters[block_counter] + 1
+                
+                block_counter = block_counter + 1
+
         fp.write("\n")
         fc.write("\n")
+
+    for i,j in zip(list_of_counters.keys(),list_of_counters.values()):
+        fp.write(str(i) + ": " + str(j) + "\n")
+        fc.write(str(i) + ": " + str(j) + "\n")
             
     fp.close()
     fc.close()
@@ -422,14 +410,17 @@ def calculate_MCM_modes(modes, angles, block_size, state_size, height = 1, excel
 
 def calculate_adders(modes, list_position_MCM, list_coefficients_MCM, coefficients):
     fa = open("modes_adders.txt", "w")
+    fao = open("modes_adders_outputs.txt", "w")
     for mode, dict_position_MCMs, dict_coefficients_MCMs in zip(modes, list_position_MCM, list_coefficients_MCM):
         fa.write("##########################################################\n\n" + str(mode))
+        fao.write("##########################################################\n\n" + str(mode))
         adder_n = 0
         for i, j in zip(dict_position_MCMs.values(), dict_position_MCMs.keys()):
             for position_value in i:
                 p, index = re.findall(r'\d+', position_value) #get p[index] from string containing and put it in two separately variables
                 if(index == '0'):
                     fa.write("\nAdder" + str(adder_n) + ": ")
+                    fao.write("\nAdder" + str(adder_n) + ": ")
                     adder_n = adder_n + 1
                     value_index = 0
                     #search all 4 values of the filter
@@ -449,18 +440,23 @@ def calculate_adders(modes, list_position_MCM, list_coefficients_MCM, coefficien
                             coefficient_index = 0
                             for coefficient_value in dict_coefficients_MCMs[k]:
                                 if(coefficient_value == value):
-                                    fa.write(str(value) + "( " + str(k) + "Y" + str(coefficient_index) + " )" + ", ")
+                                    fa.write("ref[" + str(k) + "]*" + str(value) + ", ")
+                                    fao.write(str(k) + ":Y" + str(coefficient_index) + ", ")
                                 else:
                                     coefficient_index = coefficient_index + 1
                         
                         value_index = value_index + 1
 
-        fa.write("\n\n")              
+        fa.write("\n\n")
+        fao.write("\n\n")              
 
     fa.close()
+    fao.close()
         
-
-
 list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, angles1, 32, 8)
-calculate_adders(modes1,list_position_MCM, list_coefficients_MCM,fc_coefficients)
+list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, angles1, 32, 16)
+list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, angles1, 32, 32)
+#list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, angles1, 32, 8, height=4)
+#list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, angles1, 32, 8, height=8)
+#calculate_adders(modes1,list_position_MCM, list_coefficients_MCM,fc_coefficients)
 
