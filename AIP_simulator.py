@@ -288,75 +288,11 @@ def map_to_coefficients(constants_vectors, coefficients, print_values = 0):
     return coefficients_vectors
 
 
-#NOT WORKING
-def merge_states(constants_or_coefficients_list, replicate = 0, print_values = 0):
-    merged_constants_or_coefficients = {}
-    for i in constants_or_coefficients_list:
-        merged_constants_or_coefficients = merged_constants_or_coefficients | i
-
-    if(print_values):
-        print("############################################")
-        for i,j in zip(merged_constants_or_coefficients.values(),merged_constants_or_coefficients.keys()):
-            print(j, i)
-
-
-def calculate_MCM_modes(modes, angles, block_size, state_size, height = 1, excel = 0):
-    values_ifact = []
-    values_iidx = []
-    columns = []
-
-    for i,j in zip(modes,angles):
-        tb = TransformBlock(block_size, block_size, i, j, 0, block_size*2 + 2, block_size*2 + 2, 0)
-        tb.calculate_constants_mode()
-        columns.append(i)
-        values_iidx.append(tb.array_iidx)
-        values_ifact.append(tb.array_ifact)
-
-
-    array_states_mods_iidx = []
-    array_states_mods_ifact = []
-    for i,j in zip(values_iidx,values_ifact):
-        base = 0
-        count = -1
-        base_counter = 0
-        n_state_iidx = 0
-        n_state_ifact = 0
-        state_iidx = []
-        state_ifact = []
-        array_states_iidx = ["Null" for x in range(int(block_size/state_size))] #it has at most 32/state_size states, because at 32 it starts to repeat
-        array_states_ifact = ["Null" for x in range(int(block_size/state_size))] #it has at most 32/state_size states, because at 32 it starts to repeat
-        for iidx,ifact in zip(i,j):
-            if(base == iidx):
-                state_iidx.append(base_counter)
-            else:
-                base_counter = base_counter + 1
-                state_iidx.append(base_counter)
-            base = iidx
-            count = count + 1
-            state_ifact.append(ifact)
-            if((count + 1)%state_size == 0):
-                if(state_iidx in array_states_iidx):
-                    pass
-                else:
-                    array_states_iidx[n_state_iidx] = state_iidx
-                    n_state_iidx = n_state_iidx + 1
-                state_iidx = []
-                base_counter = 0
-                
-            if((count + 1)%state_size == 0):
-                if(state_ifact in array_states_ifact):
-                    pass
-                else:
-                    array_states_ifact[n_state_ifact] = state_ifact
-                    n_state_ifact = n_state_ifact + 1
-                state_ifact = []
-                
-        array_states_mods_iidx.append(array_states_iidx)
-        array_states_mods_ifact.append(array_states_ifact)
-
+def calculate_MCM_modes(modes, array_states_mods_iidx, array_states_mods_ifact, state_size = 32, height = 1):
     list_position_MCM = []
     list_coefficients_MCM = []
-    list_of_counters = {}
+    mcm_blocks_counter = 0
+    mcm_coefficients_counter = 0
     fp = open("modes_position_MCM_" + str(state_size) + "_" + str(height) + ".txt", "w")
     fc = open("modes_coefficients_MCM_" + str(state_size) + "_" + str(height) + ".txt", "w")
     for mode, states_iidx, states_ifact in zip(modes, array_states_mods_iidx, array_states_mods_ifact):
@@ -364,7 +300,7 @@ def calculate_MCM_modes(modes, angles, block_size, state_size, height = 1, excel
         fc.write("##########################################################\n\n" + str(mode))
         dict_position_MCM = {}
         dict_coefficients_MCM = {}
-        block_counter = 1
+        block_counter = 0
         for i,j in zip(states_iidx, states_ifact):
             if(not i == "Null"):
                 fp.write("\nBlock " + str(block_counter))
@@ -381,28 +317,23 @@ def calculate_MCM_modes(modes, angles, block_size, state_size, height = 1, excel
                 for key, block in zip(MCM_blocks.keys(),MCM_blocks.values()):
                     fc.write("\n" + str(key) + ": ")
                     dict_coefficients_MCM[key] = []
+                    mcm_blocks_counter = mcm_blocks_counter + 1
                     for v in block:
                         fc.write(str(v) + ", ")
                         dict_coefficients_MCM[key].append(v)
+                        mcm_coefficients_counter = mcm_coefficients_counter + 1
 
                 fp.write("\n")
                 fc.write("\n")
                 list_position_MCM.append(dict_position_MCM)
                 list_coefficients_MCM.append(dict_coefficients_MCM)
-
-                if(block_counter not in list_of_counters.keys()):
-                    list_of_counters[block_counter] = 1
-                else:
-                    list_of_counters[block_counter] = list_of_counters[block_counter] + 1
-                
                 block_counter = block_counter + 1
 
         fp.write("\n")
         fc.write("\n")
 
-    for i,j in zip(list_of_counters.keys(),list_of_counters.values()):
-        fp.write(str(i) + ": " + str(j) + "\n")
-        fc.write(str(i) + ": " + str(j) + "\n")
+    fp.write(str(mcm_coefficients_counter/mcm_blocks_counter))
+    fc.write(str(mcm_coefficients_counter/mcm_blocks_counter))
             
     fp.close()
     fc.close()
@@ -452,11 +383,71 @@ def calculate_adders(modes, list_position_MCM, list_coefficients_MCM, coefficien
 
     fa.close()
     fao.close()
+
+def calculate_metrics(modes, array_states_mods_iidx, array_states_mods_ifact, state_size, height = 1 ):
+    fm = open("metrics_" + str(state_size) + "_" + str(height) + ".txt", "w")
+    list_of_counters = {}
+    list_of_replicas = {}
+    for mode, states_iidx, states_ifact in zip(modes, array_states_mods_iidx, array_states_mods_ifact):
+        block_counter = 0
+        for i,j in zip(states_iidx, states_ifact):
+            if(not i == "Null"):
+                block_counter = block_counter + 1
+                first_half = j
+                replicas = 1
+                exit = 0
+                while((len(first_half) > 1) and (not exit)):
+                    second_half = first_half[int(len(first_half)/2):]
+                    first_half = first_half[:int(len(first_half)/2)]
+                    if(first_half == second_half):
+                        replicas = replicas*2
+                    else:
+                        exit = 1
         
-list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, angles1, 32, 8)
-list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, angles1, 32, 16)
-list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, angles1, 32, 32)
-#list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, angles1, 32, 8, height=4)
-#list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, angles1, 32, 8, height=8)
+        if(block_counter not in list_of_counters.keys()):
+            list_of_counters[block_counter] = 1
+        else:
+            list_of_counters[block_counter] = list_of_counters[block_counter] + 1
+
+        if(replicas not in list_of_replicas.keys()):
+            list_of_replicas[replicas] = 1
+        else:
+            list_of_replicas[replicas] = list_of_replicas[replicas] + 1
+
+    fm.write("##########################################################\n\n" + "states counters:\n")
+    for i,j in zip(list_of_counters.keys(),list_of_counters.values()):
+        fm.write(str(i) + ": " + str(j) + "\n")
+
+    fm.write("\n##########################################################\n\n" + "replicas counters:\n")
+    for i,j in zip(list_of_replicas.keys(),list_of_replicas.values()):
+        fm.write(str(i) + ": " + str(j) + "\n")
+    
+    fm.close()
+
+
+df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_states(modes1, angles1, 32, 8)        
+list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_states_mods_iidx, array_states_mods_ifact, 8)
+calculate_metrics(modes1, array_states_mods_iidx, array_states_mods_ifact, 8)
+
+df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_states(modes1, angles1, 32, 16)
+list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_states_mods_iidx, array_states_mods_ifact, 16)
+calculate_metrics(modes1, array_states_mods_iidx, array_states_mods_ifact, 16)
+
+df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_states(modes1, angles1, 32, 32)
+list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_states_mods_iidx, array_states_mods_ifact, 32)
+calculate_metrics(modes1, array_states_mods_iidx, array_states_mods_ifact, 32)
+
+df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_states(modes1, angles1, 32, 8)
+list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_states_mods_iidx, array_states_mods_ifact, 8, height=4)
+calculate_metrics(modes1, array_states_mods_iidx, array_states_mods_ifact, 8, height=4)
+
+df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_states(modes1, angles1, 32, 16)
+list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_states_mods_iidx, array_states_mods_ifact, 16, height=8)
+calculate_metrics(modes1, array_states_mods_iidx, array_states_mods_ifact, 8, height=8)
+
+df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_states(modes1, angles1, 32, 32)
+list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_states_mods_iidx, array_states_mods_ifact, 32, height=8)
+calculate_metrics(modes1, array_states_mods_iidx, array_states_mods_ifact, 8, height=8)
+
 #calculate_adders(modes1,list_position_MCM, list_coefficients_MCM,fc_coefficients)
 
