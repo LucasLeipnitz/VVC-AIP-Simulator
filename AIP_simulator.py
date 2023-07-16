@@ -293,16 +293,22 @@ def map_to_coefficients(constants_vectors, coefficients, print_values = 0):
 def calculate_MCM_modes(modes, array_states_mods_iidx, array_states_mods_ifact, state_size = 32, height = 1):
     list_position_MCM = []
     list_coefficients_MCM = []
-    mcm_blocks_counter = 0
-    mcm_coefficients_counter = 0
+    list_of_counters = {}
+    list_of_replicas = {}
+    max_coef_counter_mode = -mh.inf
+    max_coef_counter_ref = -mh.inf
     fp = open(path_output_blocks + "modes_position_MCM_" + str(state_size) + "_" + str(height) + ".txt", "w")
     fc = open(path_output_blocks + "modes_coefficients_MCM_" + str(state_size) + "_" + str(height) + ".txt", "w")
+    fm = open(path_output_metrics + "metrics_" + str(state_size) + "_" + str(height) + ".txt", "w")
     for mode, states_iidx, states_ifact in zip(modes, array_states_mods_iidx, array_states_mods_ifact):
         fp.write("##########################################################\n\n" + str(mode))
         fc.write("##########################################################\n\n" + str(mode))
+        fm.write("##########################################################\n\n" + str(mode))
         dict_position_MCM = {}
         dict_coefficients_MCM = {}
         block_counter = 0
+        reference_counter = 0
+        coef_counter = 0
         for i,j in zip(states_iidx, states_ifact):
             if(not i == "Null"):
                 fp.write("\nBlock " + str(block_counter))
@@ -318,27 +324,65 @@ def calculate_MCM_modes(modes, array_states_mods_iidx, array_states_mods_ifact, 
                 MCM_blocks = map_to_coefficients(calculate_MCM_blocks(mode,i,j,height = height),fc_coefficients)
                 for key, block in zip(MCM_blocks.keys(),MCM_blocks.values()):
                     fc.write("\n" + str(key) + ": ")
+                    reference_counter = reference_counter + 1
                     dict_coefficients_MCM[key] = []
-                    mcm_blocks_counter = mcm_blocks_counter + 1
+                    reference_coef_counter = 0
                     for v in block:
                         fc.write(str(v) + ", ")
+                        reference_coef_counter = reference_coef_counter + 1
                         dict_coefficients_MCM[key].append(v)
-                        mcm_coefficients_counter = mcm_coefficients_counter + 1
+
+                    if(max_coef_counter_ref < reference_coef_counter):
+                            max_coef_counter_ref = reference_coef_counter
+
+                    coef_counter = coef_counter  + reference_coef_counter 
+                    
+
+                first_half = j
+                replicas = 1
+                exit = 0
+                while((len(first_half) > 1) and (not exit)):
+                    second_half = first_half[int(len(first_half)/2):]
+                    first_half = first_half[:int(len(first_half)/2)]
+                    if(first_half == second_half):
+                        replicas = replicas*2
+                    else:
+                        exit = 1
 
                 fp.write("\n")
                 fc.write("\n")
                 list_position_MCM.append(dict_position_MCM)
                 list_coefficients_MCM.append(dict_coefficients_MCM)
                 block_counter = block_counter + 1
+        
+        if(max_coef_counter_mode < coef_counter):
+            max_coef_counter_mode = coef_counter
+
+        fm.write("\nNumber of Blocks: " + str(block_counter))
+        fm.write("\nNumber of Replicas: " + str(replicas))
+        fm.write("\nNumber of Rerences: " + str(reference_counter))
+        fm.write("\nNumber of Coef Counter: " + str(coef_counter))
+        fm.write("\nMean of coefficients per references: " + str(round(coef_counter/reference_counter,2)))
+
+        if(block_counter not in list_of_counters.keys()):
+            list_of_counters[block_counter] = 1
+        else:
+            list_of_counters[block_counter] = list_of_counters[block_counter] + 1
+
+        if(replicas not in list_of_replicas.keys()):
+            list_of_replicas[replicas] = 1
+        else:
+            list_of_replicas[replicas] = list_of_replicas[replicas] + 1
 
         fp.write("\n")
         fc.write("\n")
-
-    fp.write(str(mcm_coefficients_counter/mcm_blocks_counter))
-    fc.write(str(mcm_coefficients_counter/mcm_blocks_counter))
-            
+        fm.write("\n")
+    
+    fm.write("\nMax coefficients in a mode: " + str(max_coef_counter_mode))   
+    fm.write("\nMax coefficients in a reference: " + str(max_coef_counter_ref))      
     fp.close()
     fc.close()
+    fm.close()
     return list_position_MCM, list_coefficients_MCM
 
 def calculate_adders(modes, list_position_MCM, list_coefficients_MCM, coefficients):
@@ -386,70 +430,30 @@ def calculate_adders(modes, list_position_MCM, list_coefficients_MCM, coefficien
     fa.close()
     fao.close()
 
-def calculate_metrics(modes, array_states_mods_iidx, array_states_mods_ifact, state_size, height = 1 ):
-    fm = open(path_output_metrics + "metrics_" + str(state_size) + "_" + str(height) + ".txt", "w")
-    list_of_counters = {}
-    list_of_replicas = {}
-    for mode, states_iidx, states_ifact in zip(modes, array_states_mods_iidx, array_states_mods_ifact):
-        block_counter = 0
-        for i,j in zip(states_iidx, states_ifact):
-            if(not i == "Null"):
-                block_counter = block_counter + 1
-                first_half = j
-                replicas = 1
-                exit = 0
-                while((len(first_half) > 1) and (not exit)):
-                    second_half = first_half[int(len(first_half)/2):]
-                    first_half = first_half[:int(len(first_half)/2)]
-                    if(first_half == second_half):
-                        replicas = replicas*2
-                    else:
-                        exit = 1
-        
-        if(block_counter not in list_of_counters.keys()):
-            list_of_counters[block_counter] = 1
-        else:
-            list_of_counters[block_counter] = list_of_counters[block_counter] + 1
-
-        if(replicas not in list_of_replicas.keys()):
-            list_of_replicas[replicas] = 1
-        else:
-            list_of_replicas[replicas] = list_of_replicas[replicas] + 1
-
-    fm.write("##########################################################\n\n" + "states counters:\n")
-    for i,j in zip(list_of_counters.keys(),list_of_counters.values()):
-        fm.write(str(i) + ": " + str(j) + "\n")
-
-    fm.write("\n##########################################################\n\n" + "replicas counters:\n")
-    for i,j in zip(list_of_replicas.keys(),list_of_replicas.values()):
-        fm.write(str(i) + ": " + str(j) + "\n")
-    
-    fm.close()
-
 
 df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_states(modes1, angles1, 32, 8)        
 list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_states_mods_iidx, array_states_mods_ifact, 8)
-calculate_metrics(modes1, array_states_mods_iidx, array_states_mods_ifact, 8)
+#calculate_metrics(modes1, array_states_mods_iidx, array_states_mods_ifact, 8)
 
 df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_states(modes1, angles1, 32, 16)
 list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_states_mods_iidx, array_states_mods_ifact, 16)
-calculate_metrics(modes1, array_states_mods_iidx, array_states_mods_ifact, 16)
+#calculate_metrics(modes1, array_states_mods_iidx, array_states_mods_ifact, 16)
 
 df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_states(modes1, angles1, 32, 32)
 list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_states_mods_iidx, array_states_mods_ifact, 32)
-calculate_metrics(modes1, array_states_mods_iidx, array_states_mods_ifact, 32)
+#calculate_metrics(modes1, array_states_mods_iidx, array_states_mods_ifact, 32)
 
 df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_states(modes1, angles1, 32, 8)
 list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_states_mods_iidx, array_states_mods_ifact, 8, height=4)
-calculate_metrics(modes1, array_states_mods_iidx, array_states_mods_ifact, 8, height=4)
+#calculate_metrics(modes1, array_states_mods_iidx, array_states_mods_ifact, 8, height=4)
 
 df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_states(modes1, angles1, 32, 16)
 list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_states_mods_iidx, array_states_mods_ifact, 16, height=8)
-calculate_metrics(modes1, array_states_mods_iidx, array_states_mods_ifact, 8, height=8)
+#calculate_metrics(modes1, array_states_mods_iidx, array_states_mods_ifact, 8, height=8)
 
 df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_states(modes1, angles1, 32, 32)
 list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_states_mods_iidx, array_states_mods_ifact, 32, height=8)
-calculate_metrics(modes1, array_states_mods_iidx, array_states_mods_ifact, 8, height=8)
+#calculate_metrics(modes1, array_states_mods_iidx, array_states_mods_ifact, 8, height=8)
 
 calculate_adders(modes1,list_position_MCM, list_coefficients_MCM,fc_coefficients)
 
