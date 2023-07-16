@@ -6,6 +6,8 @@ from collections import defaultdict
 from transform_block import TransformBlock
 
 path = "./"
+path_output_metrics = "./output/metrics/"
+path_output_blocks = "./output/mcm_block/"
 
 modes1 = [34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66]
 modes2 = [2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34]
@@ -293,8 +295,8 @@ def calculate_MCM_modes(modes, array_states_mods_iidx, array_states_mods_ifact, 
     list_coefficients_MCM = []
     mcm_blocks_counter = 0
     mcm_coefficients_counter = 0
-    fp = open("modes_position_MCM_" + str(state_size) + "_" + str(height) + ".txt", "w")
-    fc = open("modes_coefficients_MCM_" + str(state_size) + "_" + str(height) + ".txt", "w")
+    fp = open(path_output_blocks + "modes_position_MCM_" + str(state_size) + "_" + str(height) + ".txt", "w")
+    fc = open(path_output_blocks + "modes_coefficients_MCM_" + str(state_size) + "_" + str(height) + ".txt", "w")
     for mode, states_iidx, states_ifact in zip(modes, array_states_mods_iidx, array_states_mods_ifact):
         fp.write("##########################################################\n\n" + str(mode))
         fc.write("##########################################################\n\n" + str(mode))
@@ -340,8 +342,8 @@ def calculate_MCM_modes(modes, array_states_mods_iidx, array_states_mods_ifact, 
     return list_position_MCM, list_coefficients_MCM
 
 def calculate_adders(modes, list_position_MCM, list_coefficients_MCM, coefficients):
-    fa = open("modes_adders.txt", "w")
-    fao = open("modes_adders_outputs.txt", "w")
+    fa = open(path_output_blocks + "modes_adders.txt", "w")
+    fao = open(path_output_blocks + "modes_adders_outputs.txt", "w")
     for mode, dict_position_MCMs, dict_coefficients_MCMs in zip(modes, list_position_MCM, list_coefficients_MCM):
         fa.write("##########################################################\n\n" + str(mode))
         fao.write("##########################################################\n\n" + str(mode))
@@ -385,7 +387,7 @@ def calculate_adders(modes, list_position_MCM, list_coefficients_MCM, coefficien
     fao.close()
 
 def calculate_metrics(modes, array_states_mods_iidx, array_states_mods_ifact, state_size, height = 1 ):
-    fm = open("metrics_" + str(state_size) + "_" + str(height) + ".txt", "w")
+    fm = open(path_output_metrics + "metrics_" + str(state_size) + "_" + str(height) + ".txt", "w")
     list_of_counters = {}
     list_of_replicas = {}
     for mode, states_iidx, states_ifact in zip(modes, array_states_mods_iidx, array_states_mods_ifact):
@@ -449,5 +451,5 @@ df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_s
 list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_states_mods_iidx, array_states_mods_ifact, 32, height=8)
 calculate_metrics(modes1, array_states_mods_iidx, array_states_mods_ifact, 8, height=8)
 
-#calculate_adders(modes1,list_position_MCM, list_coefficients_MCM,fc_coefficients)
+calculate_adders(modes1,list_position_MCM, list_coefficients_MCM,fc_coefficients)
 
