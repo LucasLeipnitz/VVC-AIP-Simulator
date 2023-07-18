@@ -258,6 +258,8 @@ def calculate_MCM_blocks(mode, state_iidx, state_ifact, base = 0, height = 1, re
 
         base = base + 1     
 
+    constants_vectors = dict(sorted(constants_vectors.items()))
+
     if(print_values):
         print("############################################")
         for i,j in zip(constants_vectors.values(),constants_vectors.keys()):
@@ -478,5 +480,5 @@ list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_sta
 df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_states(modes1, angles1, 32, 32)
 list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_states_mods_iidx, array_states_mods_ifact, 32, height=8)
 
-calculate_adders(modes1,list_position_MCM, list_coefficients_MCM,fc_coefficients)
+#calculate_adders(modes1,list_position_MCM, list_coefficients_MCM,fc_coefficients)
 
