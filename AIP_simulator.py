@@ -300,6 +300,7 @@ def calculate_MCM_modes(modes, array_states_mods_iidx, array_states_mods_ifact, 
     fp = open(path_output_blocks + "modes_position_MCM_" + str(state_size) + "_" + str(height) + ".txt", "w")
     fc = open(path_output_blocks + "modes_coefficients_MCM_" + str(state_size) + "_" + str(height) + ".txt", "w")
     fm = open(path_output_metrics + "metrics_" + str(state_size) + "_" + str(height) + ".txt", "w")
+    metric_mean_dict = {"Mean of Number of Blocks" : 0, "Mean of Number of Replicas" : 0, "Mean of Number of References" : 0, "Mean of Number of Coef Counter" : 0, "Mean of coefficients per references" : 0}
     for mode, states_iidx, states_ifact in zip(modes, array_states_mods_iidx, array_states_mods_ifact):
         fp.write("##########################################################\n\n" + str(mode))
         fc.write("##########################################################\n\n" + str(mode))
@@ -360,9 +361,14 @@ def calculate_MCM_modes(modes, array_states_mods_iidx, array_states_mods_ifact, 
 
         fm.write("\nNumber of Blocks: " + str(block_counter))
         fm.write("\nNumber of Replicas: " + str(replicas))
-        fm.write("\nNumber of Rerences: " + str(reference_counter))
+        fm.write("\nNumber of References: " + str(reference_counter))
         fm.write("\nNumber of Coef Counter: " + str(coef_counter))
         fm.write("\nMean of coefficients per references: " + str(round(coef_counter/reference_counter,2)))
+        metric_mean_dict["Mean of Number of Blocks"] += block_counter
+        metric_mean_dict["Mean of Number of Replicas"] += replicas
+        metric_mean_dict["Mean of Number of References"] += reference_counter
+        metric_mean_dict["Mean of Number of Coef Counter"] += coef_counter
+        metric_mean_dict["Mean of coefficients per references"] += round(coef_counter/reference_counter,2)
 
         if(block_counter not in list_of_counters.keys()):
             list_of_counters[block_counter] = 1
@@ -378,6 +384,20 @@ def calculate_MCM_modes(modes, array_states_mods_iidx, array_states_mods_ifact, 
         fc.write("\n")
         fm.write("\n")
     
+    for i,j in zip(list_of_counters.keys(), list_of_counters.values()):
+        fm.write("\nNumber of modes with " + str(i) + " block(s): " + str(j))
+
+    metric_mean_dict["Mean of Number of Blocks"] = metric_mean_dict["Mean of Number of Blocks"]/len(modes)
+    metric_mean_dict["Mean of Number of Replicas"] =  metric_mean_dict["Mean of Number of Replicas"]/len(modes)
+    metric_mean_dict["Mean of Number of References"] =  metric_mean_dict["Mean of Number of References"]/len(modes)
+    metric_mean_dict["Mean of Number of Coef Counter"] =  metric_mean_dict["Mean of Number of Coef Counter"]/len(modes)
+    metric_mean_dict["Mean of coefficients per references"] =  metric_mean_dict["Mean of coefficients per references"]/len(modes)
+
+    fm.write("\nMean of Number of Blocks: " + str(round(metric_mean_dict["Mean of Number of Blocks"],2)))
+    fm.write("\nMean of Number of Replicas: " + str(round(metric_mean_dict["Mean of Number of Replicas"],2)))
+    fm.write("\nMean of Number of References: " + str(round(metric_mean_dict["Mean of Number of References"],2)))
+    fm.write("\nMean of Number of Coef Counter: " + str(round(metric_mean_dict["Mean of Number of Coef Counter"],2)))
+    fm.write("\nMean of coefficients per references: " + str(round(metric_mean_dict["Mean of coefficients per references"],2)))
     fm.write("\nMax coefficients in a mode: " + str(max_coef_counter_mode))   
     fm.write("\nMax coefficients in a reference: " + str(max_coef_counter_ref))      
     fp.close()
@@ -433,27 +453,30 @@ def calculate_adders(modes, list_position_MCM, list_coefficients_MCM, coefficien
 
 df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_states(modes1, angles1, 32, 8)        
 list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_states_mods_iidx, array_states_mods_ifact, 8)
-#calculate_metrics(modes1, array_states_mods_iidx, array_states_mods_ifact, 8)
 
 df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_states(modes1, angles1, 32, 16)
 list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_states_mods_iidx, array_states_mods_ifact, 16)
-#calculate_metrics(modes1, array_states_mods_iidx, array_states_mods_ifact, 16)
 
 df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_states(modes1, angles1, 32, 32)
 list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_states_mods_iidx, array_states_mods_ifact, 32)
-#calculate_metrics(modes1, array_states_mods_iidx, array_states_mods_ifact, 32)
 
 df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_states(modes1, angles1, 32, 8)
 list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_states_mods_iidx, array_states_mods_ifact, 8, height=4)
-#calculate_metrics(modes1, array_states_mods_iidx, array_states_mods_ifact, 8, height=4)
+
+df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_states(modes1, angles1, 32, 16)
+list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_states_mods_iidx, array_states_mods_ifact, 16, height=4)
+
+df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_states(modes1, angles1, 32, 32)
+list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_states_mods_iidx, array_states_mods_ifact, 32, height=4)
+
+df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_states(modes1, angles1, 32, 8)
+list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_states_mods_iidx, array_states_mods_ifact, 8, height=8)
 
 df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_states(modes1, angles1, 32, 16)
 list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_states_mods_iidx, array_states_mods_ifact, 16, height=8)
-#calculate_metrics(modes1, array_states_mods_iidx, array_states_mods_ifact, 8, height=8)
 
 df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_states(modes1, angles1, 32, 32)
 list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_states_mods_iidx, array_states_mods_ifact, 32, height=8)
-#calculate_metrics(modes1, array_states_mods_iidx, array_states_mods_ifact, 8, height=8)
 
 calculate_adders(modes1,list_position_MCM, list_coefficients_MCM,fc_coefficients)
 
