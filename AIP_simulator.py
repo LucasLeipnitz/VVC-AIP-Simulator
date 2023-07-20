@@ -294,21 +294,25 @@ def map_to_coefficients(constants_vectors, coefficients, print_values = 0):
     return coefficients_vectors
 
 
-def calculate_MCM_modes(modes, array_states_mods_iidx, array_states_mods_ifact, state_size = 32, height = 1):
+def calculate_MCM_modes(modes, array_states_mods_iidx, array_states_mods_ifact, state_size = 32, height = 1, write_file = 0):
     list_position_MCM = []
     list_coefficients_MCM = []
     list_of_counters = {}
     list_of_replicas = {}
     max_coef_counter_mode = -mh.inf
     max_coef_counter_ref = -mh.inf
-    fp = open(path_output_blocks + "modes_position_MCM_" + str(state_size) + "_" + str(height) + ".txt", "w")
-    fc = open(path_output_blocks + "modes_coefficients_MCM_" + str(state_size) + "_" + str(height) + ".txt", "w")
-    fm = open(path_output_metrics + "metrics_" + str(state_size) + "_" + str(height) + ".txt", "w")
+    if(write_file):
+        fp = open(path_output_blocks + "modes_position_MCM_" + str(state_size) + "_" + str(height) + ".txt", "w")
+        fc = open(path_output_blocks + "modes_coefficients_MCM_" + str(state_size) + "_" + str(height) + ".txt", "w")
+        fm = open(path_output_metrics + "metrics_" + str(state_size) + "_" + str(height) + ".txt", "w")
+
     metric_mean_dict = {"Mean of Number of Blocks" : 0, "Mean of Number of Replicas" : 0, "Mean of Number of References" : 0, "Mean of Number of Coef Counter" : 0, "Mean of coefficients per references" : 0}
     for mode, states_iidx, states_ifact in zip(modes, array_states_mods_iidx, array_states_mods_ifact):
-        fp.write("##########################################################\n\n" + str(mode))
-        fc.write("##########################################################\n\n" + str(mode))
-        fm.write("##########################################################\n\n" + str(mode))
+        if(write_file):
+            fp.write("##########################################################\n\n" + str(mode))
+            fc.write("##########################################################\n\n" + str(mode))
+            fm.write("##########################################################\n\n" + str(mode))
+
         dict_position_MCM = {}
         dict_coefficients_MCM = {}
         block_counter = 0
@@ -316,24 +320,34 @@ def calculate_MCM_modes(modes, array_states_mods_iidx, array_states_mods_ifact, 
         coef_counter = 0
         for i,j in zip(states_iidx, states_ifact):
             if(not i == "Null"):
-                fp.write("\nBlock " + str(block_counter))
-                fc.write("\nBlock " + str(block_counter))
+                if(write_file):
+                    fp.write("\nBlock " + str(block_counter))
+                    fc.write("\nBlock " + str(block_counter))
+
                 MCM_blocks = calculate_MCM_blocks(mode,i,j,height = height)
                 for key, block in zip(MCM_blocks.keys(),MCM_blocks.values()):
-                    fp.write("\n" + str(key) + ": ")
+                    if(write_file):
+                        fp.write("\n" + str(key) + ": ")
+
                     dict_position_MCM[key] = []
                     for v in block:
-                        fp.write(str(v) + ", ")
+                        if(write_file):
+                            fp.write(str(v) + ", ")
+                            
                         dict_position_MCM[key].append(v)
                 
                 MCM_blocks = map_to_coefficients(calculate_MCM_blocks(mode,i,j,height = height),fc_coefficients)
                 for key, block in zip(MCM_blocks.keys(),MCM_blocks.values()):
-                    fc.write("\n" + str(key) + ": ")
+                    if(write_file):
+                        fc.write("\n" + str(key) + ": ")
+
                     reference_counter = reference_counter + 1
                     dict_coefficients_MCM[key] = []
                     reference_coef_counter = 0
                     for v in block:
-                        fc.write(str(v) + ", ")
+                        if(write_file):
+                            fc.write(str(v) + ", ")
+
                         reference_coef_counter = reference_coef_counter + 1
                         dict_coefficients_MCM[key].append(v)
 
@@ -353,21 +367,25 @@ def calculate_MCM_modes(modes, array_states_mods_iidx, array_states_mods_ifact, 
                         replicas = replicas*2
                     else:
                         exit = 1
+                
+                if(write_file):
+                    fp.write("\n")
+                    fc.write("\n")
 
-                fp.write("\n")
-                fc.write("\n")
                 list_position_MCM.append(dict_position_MCM.copy())
                 list_coefficients_MCM.append(dict_coefficients_MCM.copy())
                 block_counter = block_counter + 1
         
         if(max_coef_counter_mode < coef_counter):
             max_coef_counter_mode = coef_counter
+        
+        if(write_file):
+            fm.write("\nNumber of Blocks: " + str(block_counter))
+            fm.write("\nNumber of Replicas: " + str(replicas))
+            fm.write("\nNumber of References: " + str(reference_counter))
+            fm.write("\nNumber of Coef Counter: " + str(coef_counter))
+            fm.write("\nMean of coefficients per references: " + str(round(coef_counter/reference_counter,2)))
 
-        fm.write("\nNumber of Blocks: " + str(block_counter))
-        fm.write("\nNumber of Replicas: " + str(replicas))
-        fm.write("\nNumber of References: " + str(reference_counter))
-        fm.write("\nNumber of Coef Counter: " + str(coef_counter))
-        fm.write("\nMean of coefficients per references: " + str(round(coef_counter/reference_counter,2)))
         metric_mean_dict["Mean of Number of Blocks"] += block_counter
         metric_mean_dict["Mean of Number of Replicas"] += replicas
         metric_mean_dict["Mean of Number of References"] += reference_counter
@@ -384,12 +402,14 @@ def calculate_MCM_modes(modes, array_states_mods_iidx, array_states_mods_ifact, 
         else:
             list_of_replicas[replicas] = list_of_replicas[replicas] + 1
 
-        fp.write("\n")
-        fc.write("\n")
-        fm.write("\n")
+        if(write_file):
+            fp.write("\n")
+            fc.write("\n")
+            fm.write("\n")
     
-    for i,j in zip(list_of_counters.keys(), list_of_counters.values()):
-        fm.write("\nNumber of modes with " + str(i) + " block(s): " + str(j))
+    if(write_file):
+        for i,j in zip(list_of_counters.keys(), list_of_counters.values()):
+            fm.write("\nNumber of modes with " + str(i) + " block(s): " + str(j))
 
     metric_mean_dict["Mean of Number of Blocks"] = metric_mean_dict["Mean of Number of Blocks"]/len(modes)
     metric_mean_dict["Mean of Number of Replicas"] =  metric_mean_dict["Mean of Number of Replicas"]/len(modes)
@@ -397,31 +417,49 @@ def calculate_MCM_modes(modes, array_states_mods_iidx, array_states_mods_ifact, 
     metric_mean_dict["Mean of Number of Coef Counter"] =  metric_mean_dict["Mean of Number of Coef Counter"]/len(modes)
     metric_mean_dict["Mean of coefficients per references"] =  metric_mean_dict["Mean of coefficients per references"]/len(modes)
 
-    fm.write("\nMean of Number of Blocks: " + str(round(metric_mean_dict["Mean of Number of Blocks"],2)))
-    fm.write("\nMean of Number of Replicas: " + str(round(metric_mean_dict["Mean of Number of Replicas"],2)))
-    fm.write("\nMean of Number of References: " + str(round(metric_mean_dict["Mean of Number of References"],2)))
-    fm.write("\nMean of Number of Coef Counter: " + str(round(metric_mean_dict["Mean of Number of Coef Counter"],2)))
-    fm.write("\nMean of coefficients per references: " + str(round(metric_mean_dict["Mean of coefficients per references"],2)))
-    fm.write("\nMax coefficients in a mode: " + str(max_coef_counter_mode))   
-    fm.write("\nMax coefficients in a reference: " + str(max_coef_counter_ref))      
-    fp.close()
-    fc.close()
-    fm.close()
+    if(write_file):
+        fm.write("\nMean of Number of Blocks: " + str(round(metric_mean_dict["Mean of Number of Blocks"],2)))
+        fm.write("\nMean of Number of Replicas: " + str(round(metric_mean_dict["Mean of Number of Replicas"],2)))
+        fm.write("\nMean of Number of References: " + str(round(metric_mean_dict["Mean of Number of References"],2)))
+        fm.write("\nMean of Number of Coef Counter: " + str(round(metric_mean_dict["Mean of Number of Coef Counter"],2)))
+        fm.write("\nMean of coefficients per references: " + str(round(metric_mean_dict["Mean of coefficients per references"],2)))
+        fm.write("\nMax coefficients in a mode: " + str(max_coef_counter_mode))   
+        fm.write("\nMax coefficients in a reference: " + str(max_coef_counter_ref))      
+        fp.close()
+        fc.close()
+        fm.close()
+    
     return list_position_MCM, list_coefficients_MCM
 
-def calculate_adders(modes, list_position_MCM, list_coefficients_MCM, coefficients):
-    fa = open(path_output_blocks + "modes_adders.txt", "w")
-    fao = open(path_output_blocks + "modes_adders_outputs.txt", "w")
+def calculate_adders(modes, list_position_MCM, list_coefficients_MCM, coefficients, write_file = 0):
+    
+    if(write_file):
+        fa = open(path_output_blocks + "modes_adders.txt", "w")
+        fao = open(path_output_blocks + "modes_adders_outputs.txt", "w")
+
+    list_of_modes_references = [] #list of list of references of each mode
+    list_of_modes_adders = [] #list of list of adders of each mode
     for mode, dict_position_MCMs, dict_coefficients_MCMs in zip(modes, list_position_MCM, list_coefficients_MCM):
-        fa.write("##########################################################\n\n" + str(mode))
-        fao.write("##########################################################\n\n" + str(mode))
+        if(write_file):
+            fa.write("##########################################################\n\n" + str(mode))
+            fao.write("##########################################################\n\n" + str(mode))
+
+        list_of_references = [] #a list of all the references(integer) for a mode
+        list_of_adders = [] #is a list of tuples (ref,k) where ref(integer) is the reference multipluing, Yk is its output and k is an integer (Y1 for first output, Y2 for second ...)
+        
+        for key in dict_coefficients_MCMs.keys():
+            list_of_references.append(key)
+
         adder_n = 0
         for i, j in zip(dict_position_MCMs.values(), dict_position_MCMs.keys()):
             for position_value in i:
                 p, index = re.findall(r'\d+', position_value) #get p[index] from string containing and put it in two separately variables
                 if(index == '0'):
-                    fa.write("\nAdder" + str(adder_n) + ": ")
-                    fao.write("\nAdder" + str(adder_n) + ": ")
+                    if(write_file):
+                        fa.write("\nAdder" + str(adder_n) + ": ")
+                        fao.write("\nAdder" + str(adder_n) + ": ")
+
+                    current_adder = []
                     adder_n = adder_n + 1
                     value_index = 0
                     #search all 4 values of the filter
@@ -435,68 +473,40 @@ def calculate_adders(modes, list_position_MCM, list_coefficients_MCM, coefficien
                             value = coefficients[range_position_value]
                         
                         if(value == 0):
-                            fa.write("ref[" + str(k) + "]*0, ")
-                            fao.write("0, ")
+                            if(write_file):
+                                fa.write("ref[" + str(k) + "]*0, ")
+                                fao.write("0, ")
+
+                            current_tuple = (0,0)
                         else:
                             #search for the value in list_coefficients_MCM of index k
                             coefficient_index = 0
                             for coefficient_value in dict_coefficients_MCMs[k]:
                                 if(coefficient_value == value):
-                                    fa.write("ref[" + str(k) + "]*" + str(value) + ", ")
-                                    fao.write(str(k) + ":Y" + str(coefficient_index) + ", ")
+                                    if(write_file):
+                                        fa.write("ref[" + str(k) + "]*" + str(value) + ", ")
+                                        fao.write(str(k) + ":Y" + str(coefficient_index) + ", ")
+
+                                    current_tuple = (k,coefficient_index)
                                 else:
                                     coefficient_index = coefficient_index + 1
                         
+                        current_adder.append(current_tuple)
                         value_index = value_index + 1
+                    
+                    list_of_adders.append(current_adder.copy())
 
-        fa.write("\n\n")
-        fao.write("\n\n")              
+        list_of_modes_references.append(list_of_references.copy())
+        list_of_modes_adders.append(list_of_adders.copy())
 
-    fa.close()
-    fao.close()
+        if(write_file):
+            fa.write("\n\n")
+            fao.write("\n\n")              
+
+    if(write_file):
+        fa.close()
+        fao.close()
+
+    return list_of_modes_adders, list_of_modes_references
 
 
-'''df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_states(modes1, angles1, 32, 8)        
-list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_states_mods_iidx, array_states_mods_ifact, 8)
-
-df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_states(modes1, angles1, 32, 16)
-list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_states_mods_iidx, array_states_mods_ifact, 16)
-calculate_adders(modes1,list_position_MCM, list_coefficients_MCM,fc_coefficients)
-
-df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_states(modes1, angles1, 32, 32)
-list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_states_mods_iidx, array_states_mods_ifact, 32)
-
-df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_states(modes1, angles1, 32, 8)
-list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_states_mods_iidx, array_states_mods_ifact, 8, height=4)
-
-df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_states(modes1, angles1, 32, 16)
-list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_states_mods_iidx, array_states_mods_ifact, 16, height=4)
-
-df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_states(modes1, angles1, 32, 32)
-list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_states_mods_iidx, array_states_mods_ifact, 32, height=4)
-
-df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_states(modes1, angles1, 32, 8)
-list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_states_mods_iidx, array_states_mods_ifact, 8, height=8)
-
-df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_states(modes1, angles1, 32, 16)
-list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_states_mods_iidx, array_states_mods_ifact, 16, height=8)
-
-df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_states(modes1, angles1, 32, 32)
-list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_states_mods_iidx, array_states_mods_ifact, 32, height=8)'''
-
-df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_states(modes4, angles4, 32, 16)
-
-list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes4, array_states_mods_iidx, array_states_mods_ifact, 16)
-
-'''for mode, states_iidx, states_ifact in zip(modes4, array_states_mods_iidx, array_states_mods_ifact):
-    print(mode, states_ifact)
-
-for mode, dict_position_MCMs, dict_coefficients_MCMs in zip(modes4, list_position_MCM, list_coefficients_MCM):
-    print(mode, dict_position_MCMs)'''
-
-#print(modes4, array_states_mods_ifact)
-#print(modes4, list_position_MCM)
-#print(list_position_MCM[0])
-#print(list_position_MCM[1])
-
-calculate_adders(modes4,list_position_MCM, list_coefficients_MCM,fc_coefficients)
