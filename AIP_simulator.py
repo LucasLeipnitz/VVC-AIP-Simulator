@@ -12,11 +12,13 @@ path_output_blocks = "./output/mcm_block/"
 modes1 = [34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66]
 modes2 = [2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34]
 modes3 = [2,3,10,18,33,34,35,43,46,49,50,54]
+modes4 = [35]
 modes_positive = [50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66]
 modes_negative = [34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50]
 angles1 = [-32,-29,-26,-23,-20,-18,-16,-14,-12,-10,-8,-6,-4,-3,-2,-1,0,1,2,3,4,6,8,10,12,14,16,18,20,23,26,29,32]
 angles2 = [32,29,26,23,20,18,16,14,12,10,8,6,4,3,2,1,0,-1,-2,-3,-4,-6,-8,-10,-12,-14,-16,-18,-20,-23,-26,-29,-32]
 angles3 = [32,29,26,23,20,18,16,14,12,10,8,6,4,3,2,1,0,-1,-2,-3,-4,-6,-8,-10,-12,-14,-16,-18,-20,-23,-26,-29,-32]
+angles4 = [-29]
 angles_positive = [0,1,2,3,4,6,8,10,12,14,16,18,20,23,26,29,32]
 angles_negative = [-32,-29,-26,-23,-20,-18,-16,-14,-12,-10,-8,-6,-4,-3,-2,-1,0]
 
@@ -213,7 +215,7 @@ def calculate_states(modes, angles, block_size, state_size, excel = 0):
     return df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact
 
    
-def calculate_MCM_blocks(mode, state_iidx, state_ifact, base = 0, height = 1, replicate = 0, print_values = 0):
+def calculate_MCM_blocks(mode, state_iidx, state_ifact, base = 0, height = 1, print_values = 0):
     constants_vectors = {}
     variation = 0 #variation of state_iidx[i+1] and state_iidx[i] 
     
@@ -235,7 +237,7 @@ def calculate_MCM_blocks(mode, state_iidx, state_ifact, base = 0, height = 1, re
                 else:
                     #TODO modes < 34
                     pass
-            
+
             if(downward_index not in constants_vectors):
                 constants_vectors[downward_index] = []
             
@@ -258,7 +260,7 @@ def calculate_MCM_blocks(mode, state_iidx, state_ifact, base = 0, height = 1, re
 
         base = base + 1     
 
-    constants_vectors = dict(sorted(constants_vectors.items()))
+    #constants_vectors = dict(sorted(constants_vectors.items()))
 
     if(print_values):
         print("############################################")
@@ -354,8 +356,8 @@ def calculate_MCM_modes(modes, array_states_mods_iidx, array_states_mods_ifact, 
 
                 fp.write("\n")
                 fc.write("\n")
-                list_position_MCM.append(dict_position_MCM)
-                list_coefficients_MCM.append(dict_coefficients_MCM)
+                list_position_MCM.append(dict_position_MCM.copy())
+                list_coefficients_MCM.append(dict_coefficients_MCM.copy())
                 block_counter = block_counter + 1
         
         if(max_coef_counter_mode < coef_counter):
@@ -426,14 +428,15 @@ def calculate_adders(modes, list_position_MCM, list_coefficients_MCM, coefficien
                     for k in range(j, j+4):
                         range_position_value = p + '[' + str(value_index) + ']'
                         if(range_position_value not in coefficients):
-                            p, index = re.findall(r'\d+', range_position_value) #get p[index] from string containing and put it in two separately variables
-                            p, index = simmetry_rule(p, index) #transform in a value that exists in the coefficients by the simmetry rule
-                            value = coefficients[p + '[' + index + ']']
+                            d, index = re.findall(r'\d+', range_position_value) #get p[index] from string containing and put it in two separately variables
+                            d, index = simmetry_rule(d, index) #transform in a value that exists in the coefficients by the simmetry rule
+                            value = coefficients[d + '[' + index + ']']
                         else:
                             value = coefficients[range_position_value]
                         
                         if(value == 0):
-                            pass #if values equals to zero, no need to put it on the adder
+                            fa.write("ref[" + str(k) + "]*0, ")
+                            fao.write("0, ")
                         else:
                             #search for the value in list_coefficients_MCM of index k
                             coefficient_index = 0
@@ -453,11 +456,12 @@ def calculate_adders(modes, list_position_MCM, list_coefficients_MCM, coefficien
     fao.close()
 
 
-df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_states(modes1, angles1, 32, 8)        
+'''df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_states(modes1, angles1, 32, 8)        
 list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_states_mods_iidx, array_states_mods_ifact, 8)
 
 df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_states(modes1, angles1, 32, 16)
 list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_states_mods_iidx, array_states_mods_ifact, 16)
+calculate_adders(modes1,list_position_MCM, list_coefficients_MCM,fc_coefficients)
 
 df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_states(modes1, angles1, 32, 32)
 list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_states_mods_iidx, array_states_mods_ifact, 32)
@@ -478,7 +482,21 @@ df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_s
 list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_states_mods_iidx, array_states_mods_ifact, 16, height=8)
 
 df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_states(modes1, angles1, 32, 32)
-list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_states_mods_iidx, array_states_mods_ifact, 32, height=8)
+list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes1, array_states_mods_iidx, array_states_mods_ifact, 32, height=8)'''
 
-#calculate_adders(modes1,list_position_MCM, list_coefficients_MCM,fc_coefficients)
+df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = calculate_states(modes4, angles4, 32, 16)
 
+list_position_MCM, list_coefficients_MCM = calculate_MCM_modes(modes4, array_states_mods_iidx, array_states_mods_ifact, 16)
+
+'''for mode, states_iidx, states_ifact in zip(modes4, array_states_mods_iidx, array_states_mods_ifact):
+    print(mode, states_ifact)
+
+for mode, dict_position_MCMs, dict_coefficients_MCMs in zip(modes4, list_position_MCM, list_coefficients_MCM):
+    print(mode, dict_position_MCMs)'''
+
+#print(modes4, array_states_mods_ifact)
+#print(modes4, list_position_MCM)
+#print(list_position_MCM[0])
+#print(list_position_MCM[1])
+
+calculate_adders(modes4,list_position_MCM, list_coefficients_MCM,fc_coefficients)
