@@ -428,7 +428,20 @@ def calculate_MCM_modes(modes, array_states_mods_iidx, array_states_mods_ifact, 
         fp.close()
         fc.close()
         fm.close()
-    
+
+    #order dicts
+    '''sorted_dict_list = []
+    for i in list_coefficients_MCM:
+        sorted_dict_list.append(dict(sorted(i.items())))
+
+    list_coefficients_MCM = sorted_dict_list.copy()
+
+    sorted_dict_list = []
+    for i in list_position_MCM:
+        sorted_dict_list.append(dict(sorted(i.items())))
+
+    list_position_MCM = sorted_dict_list.copy()'''
+
     return list_position_MCM, list_coefficients_MCM
 
 def calculate_adders(modes, list_position_MCM, list_coefficients_MCM, coefficients, write_file = 0):
@@ -437,19 +450,14 @@ def calculate_adders(modes, list_position_MCM, list_coefficients_MCM, coefficien
         fa = open(path_output_blocks + "modes_adders.txt", "w")
         fao = open(path_output_blocks + "modes_adders_outputs.txt", "w")
 
-    list_of_modes_references = [] #list of list of references of each mode
     list_of_modes_adders = [] #list of list of adders of each mode
     for mode, dict_position_MCMs, dict_coefficients_MCMs in zip(modes, list_position_MCM, list_coefficients_MCM):
         if(write_file):
             fa.write("##########################################################\n\n" + str(mode))
             fao.write("##########################################################\n\n" + str(mode))
 
-        list_of_references = [] #a list of all the references(integer) for a mode
         list_of_adders = [] #is a list of tuples (ref,k) where ref(integer) is the reference multipluing, Yk is its output and k is an integer (Y1 for first output, Y2 for second ...)
         
-        for key in dict_coefficients_MCMs.keys():
-            list_of_references.append(key)
-
         adder_n = 0
         for i, j in zip(dict_position_MCMs.values(), dict_position_MCMs.keys()):
             for position_value in i:
@@ -477,10 +485,10 @@ def calculate_adders(modes, list_position_MCM, list_coefficients_MCM, coefficien
                                 fa.write("ref[" + str(k) + "]*0, ")
                                 fao.write("0, ")
 
-                            current_tuple = (0,0)
+                            current_tuple = (k,0)
                         else:
                             #search for the value in list_coefficients_MCM of index k
-                            coefficient_index = 0
+                            coefficient_index = 1
                             for coefficient_value in dict_coefficients_MCMs[k]:
                                 if(coefficient_value == value):
                                     if(write_file):
@@ -489,14 +497,14 @@ def calculate_adders(modes, list_position_MCM, list_coefficients_MCM, coefficien
 
                                     current_tuple = (k,coefficient_index)
                                 else:
-                                    coefficient_index = coefficient_index + 1
+                                    if(coefficient_value != 0):
+                                        coefficient_index = coefficient_index + 1
                         
                         current_adder.append(current_tuple)
                         value_index = value_index + 1
                     
                     list_of_adders.append(current_adder.copy())
 
-        list_of_modes_references.append(list_of_references.copy())
         list_of_modes_adders.append(list_of_adders.copy())
 
         if(write_file):
@@ -507,6 +515,6 @@ def calculate_adders(modes, list_position_MCM, list_coefficients_MCM, coefficien
         fa.close()
         fao.close()
 
-    return list_of_modes_adders, list_of_modes_references
+    return list_of_modes_adders
 
 

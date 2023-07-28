@@ -33,5 +33,7 @@ df_iidx, df_ifact, array_states_mods_iidx, array_states_mods_ifact = sim.calcula
 
 list_position_MCM, list_coefficients_MCM = sim.calculate_MCM_modes(sim.modes4, array_states_mods_iidx, array_states_mods_ifact, 16)
 
-list_of_modes_adders, list_of_modes_references = sim.calculate_adders(sim.modes4,list_position_MCM, list_coefficients_MCM, sim.fc_coefficients)
-gen.generate_mode(sim.modes4[0], list_of_modes_adders[0], list_of_modes_references[0])
+list_of_modes_adders = sim.calculate_adders(sim.modes4,list_position_MCM, list_coefficients_MCM, sim.fc_coefficients)
+gen.generate_mode(sim.modes4[0], list_of_modes_adders[0], list_coefficients_MCM[0])
+#print(list_of_modes_adders[0][0][0][1])
+#print(list_coefficients_MCM[0])
